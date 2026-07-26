@@ -10,12 +10,21 @@ ANDROID_CODEBASE.forEach((file) => {
   }
 
   let fileContent = file.content;
+  
   // Tự động thay thế thư viện FFmpegKit cũ bằng phiên bản cộng đồng duy trì (bản 6.0.1 chuẩn)
   if (file.filename.includes('build.gradle.kts') || file.path.includes('build.gradle.kts')) {
     fileContent = fileContent.replace(
       'com.arthenica:ffmpeg-kit-full:6.0-2',
       'dev.ffmpegkit-maintained:ffmpeg-kit-free:6.0.1'
     );
+  }
+
+  // Sửa lỗi thiếu icon và style theme bằng cách trỏ về hệ thống mặc định của Android
+  if (file.filename === 'AndroidManifest.xml') {
+    fileContent = fileContent
+      .replace('@mipmap/ic_launcher', '@android:drawable/sym_def_app_icon')
+      .replace('@mipmap/ic_launcher_round', '@android:drawable/sym_def_app_icon')
+      .replace(/@style\/Theme\.YTLiveStreamer/g, '@android:style/Theme.DeviceDefault.NoActionBar');
   }
 
   fs.writeFileSync(file.path, fileContent);
