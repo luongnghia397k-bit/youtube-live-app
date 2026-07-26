@@ -34,12 +34,11 @@ ANDROID_CODEBASE.forEach((file) => {
       .replace(/YTLiveTheme/g, "MaterialTheme");
   }
 
-  // Sửa lỗi cú pháp trích xuất chuỗi nội suy (double-escaping) trong RtmpStreamService.kt
+  // Sửa lỗi cú pháp trích xuất chuỗi nội suy (double-escaping) trong RtmpStreamService.kt bằng bộ lọc thông minh
   if (file.filename.includes('RtmpStreamService.kt')) {
     fileContent = fileContent
-      .replace(/\${'\${log\.message}'}/g, '${log.message}')
-      .replace(/\${'\${statistics\.videoFrameNumber}'}/g, '${statistics.videoFrameNumber}')
-      .replace(/\${'\${statistics\.bitrate}'}/g, '${statistics.bitrate}');
+      .replace(/FFmpeg Log: .*/g, 'FFmpeg Log: ${log.message}")')
+      .replace(/FFmpeg Stats - Frame: .*/g, 'FFmpeg Stats - Frame: ${statistics.videoFrameNumber}, Bitrate: ${statistics.bitrate} kbps")');
   }
 
   fs.writeFileSync(file.path, fileContent);
