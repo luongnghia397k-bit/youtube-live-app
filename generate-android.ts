@@ -66,3 +66,10 @@ include(":app")
 
 fs.writeFileSync('settings.gradle.kts', settingsContent);
 console.log('Đã tạo settings.gradle.kts');
+
+// 5. Tạo file gradle.properties kích hoạt AndroidX ở thư mục gốc
+const gradlePropertiesContent = `android.useAndroidX=true
+`;
+
+fs.writeFileSync('gradle.properties', gradlePropertiesContent);
+console.log('Đã tạo gradle.properties thành công');
