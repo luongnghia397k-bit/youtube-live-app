@@ -12,11 +12,18 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
+    - name: List initial files
+      run: |
+        echo "=== Initial files in repository ==="
+        ls -la
+
     - name: Unzip project
       run: |
-        if ls *.zip 1> /dev/null 2>&1; then
-          unzip *.zip -d .
-        fi
+        echo "=== Unzipping files ==="
+        # Hoạt động với mọi định dạng viết hoa/thường (.zip, .ZIP) và xử lý khoảng trắng trong tên file
+        find . -maxdepth 1 -iname "*.zip" -exec unzip -o {} -d . \;
+        echo "=== Files after unzipping ==="
+        ls -la
 
     - name: Set up JDK 17
       uses: actions/setup-java@v4
@@ -26,11 +33,15 @@ jobs:
 
     - name: Find and Build with Gradle
       run: |
+        echo "=== Finding gradlew ==="
         GRADLEW_PATH=$(find . -name gradlew)
         if [ -n "$GRADLEW_PATH" ]; then
           DIR_PATH=$(dirname "$GRADLEW_PATH")
+          echo "Found gradlew at: $GRADLEW_PATH"
+          echo "Gradle directory: $DIR_PATH"
           cd "$DIR_PATH"
           chmod +x gradlew
+          echo "=== Starting Gradle Build ==="
           ./gradlew assembleDebug
         else
           echo "Error: gradlew not found! Please make sure you have uploaded the project .zip file to the repository."
@@ -39,8 +50,11 @@ jobs:
 
     - name: Collect APK
       run: |
+        echo "=== Collecting APK ==="
         mkdir -p build-out
         find . -name "*-debug.apk" -exec cp {} build-out/ \;
+        echo "Files in build-out:"
+        ls -la build-out
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
