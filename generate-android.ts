@@ -10,11 +10,11 @@ ANDROID_CODEBASE.forEach((file) => {
   }
 
   let fileContent = file.content;
-  // Tự động thay thế thư viện FFmpegKit cũ đã bị xóa bằng phiên bản cộng đồng duy trì
+  // Tự động thay thế thư viện FFmpegKit cũ bằng phiên bản cộng đồng duy trì (bản 6.0.1 chuẩn)
   if (file.filename.includes('build.gradle.kts') || file.path.includes('build.gradle.kts')) {
     fileContent = fileContent.replace(
       'com.arthenica:ffmpeg-kit-full:6.0-2',
-      'dev.ffmpegkit-maintained:ffmpeg-kit-free:6.0.3'
+      'dev.ffmpegkit-maintained:ffmpeg-kit-free:6.0.1'
     );
   }
 
