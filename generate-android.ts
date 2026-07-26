@@ -86,9 +86,11 @@ include(":app")
 fs.writeFileSync('settings.gradle.kts', settingsContent);
 console.log('Đã tạo settings.gradle.kts');
 
-// 5. Tạo file gradle.properties kích hoạt AndroidX ở thư mục gốc
+// 5. Tạo file gradle.properties kích hoạt AndroidX và cấp 3GB RAM tối ưu cho đám mây
 const gradlePropertiesContent = `android.useAndroidX=true
+org.gradle.jvmargs=-Xmx3072m -XX:MaxMetaspaceSize=512m
+org.gradle.daemon=false
 `;
 
 fs.writeFileSync('gradle.properties', gradlePropertiesContent);
-console.log('Đã tạo gradle.properties thành công');
+console.log('Đã tạo gradle.properties tối ưu RAM thành công');
