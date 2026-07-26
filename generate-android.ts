@@ -27,6 +27,21 @@ ANDROID_CODEBASE.forEach((file) => {
       .replace(/@style\/Theme\.YTLiveStreamer/g, '@android:style/Theme.DeviceDefault.NoActionBar');
   }
 
+  // Sửa lỗi thiếu Theme tùy chỉnh trong MainActivity (Thay thế bằng MaterialTheme mặc định)
+  if (file.filename.includes('MainActivity.kt')) {
+    fileContent = fileContent
+      .replace("import com.ytlive.rtmpstreamer.ui.theme.YTLiveTheme", "")
+      .replace(/YTLiveTheme/g, "MaterialTheme");
+  }
+
+  // Sửa lỗi cú pháp trích xuất chuỗi nội suy (double-escaping) trong RtmpStreamService.kt
+  if (file.filename.includes('RtmpStreamService.kt')) {
+    fileContent = fileContent
+      .replace(/\${'\${log\.message}'}/g, '${log.message}')
+      .replace(/\${'\${statistics\.videoFrameNumber}'}/g, '${statistics.videoFrameNumber}')
+      .replace(/\${'\${statistics\.bitrate}'}/g, '${statistics.bitrate}');
+  }
+
   fs.writeFileSync(file.path, fileContent);
   console.log(`Đã trích xuất: ${file.path}`);
 });
