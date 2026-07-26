@@ -23,7 +23,6 @@ jobs:
       with:
         java-version: '17'
         distribution: 'temurin'
-        cache: gradle
 
     - name: Find and Build with Gradle
       run: |
@@ -34,7 +33,7 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug
         else
-          echo "Error: gradlew not found!"
+          echo "Error: gradlew not found! Please make sure you have uploaded the project .zip file to the repository."
           exit 1
         fi
 
