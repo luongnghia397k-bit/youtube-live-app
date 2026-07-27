@@ -72,7 +72,7 @@ writeFileSecure('gradle.properties', gradlePropertiesContent);
 writeFileSecure('app/gradle.properties', gradlePropertiesContent);
 
 
-// 3. HÀM ROBOT QUÉT VÀ SỬA TOÀN BỘ WORKSPACE (BẮT CẢ CÁC BẢN SAO TRONG FILE ZIP)
+// 3. HÀM ROBOT QUÉT VÀ SỬA TOÀN BỘ WORKSPACE (BẮT THEO TÊN BIẾN CỐT LÕI)
 function scanAndFixAllFiles(dir: string) {
   const files = fs.readdirSync(dir);
   for (const file of files) {
@@ -90,15 +90,15 @@ function scanAndFixAllFiles(dir: string) {
       let content = fs.readFileSync(fullPath, 'utf8');
       let changed = false;
 
-      // Vá lỗi RtmpStreamService.kt bằng cách ghi đè trực tiếp dòng chứa log
+      // Vá lỗi RtmpStreamService.kt bằng cách tìm kiếm chính xác tên biến lõi
       if (file === 'RtmpStreamService.kt') {
         const lines = content.split('\n');
         const updatedLines = lines.map(line => {
-          if (line.includes('FFmpeg Log:')) {
+          if (line.includes('log.message')) {
             changed = true;
             return '                Log.d(TAG, "FFmpeg Log: ${log.message}")';
           }
-          if (line.includes('FFmpeg Stats - Frame:')) {
+          if (line.includes('statistics.videoFrameNumber') || line.includes('statistics.bitrate')) {
             changed = true;
             return '                Log.d(TAG, "FFmpeg Stats - Frame: ${statistics.videoFrameNumber}, Bitrate: ${statistics.bitrate} kbps")';
           }
