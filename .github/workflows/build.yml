@@ -80,8 +80,10 @@ jobs:
         gradle wrapper --gradle-version 8.7
         chmod +x gradlew
 
-    - name: Build Android App with Gradle
-      run: ./gradlew assembleDebug
+    - name: Build Android App with Gradle (Force Clean)
+      run: |
+        # Chạy lệnh dọn sạch mọi cache biên dịch cũ trước khi dịch mới tinh
+        ./gradlew clean assembleDebug --no-build-cache --no-daemon
 
     - name: Collect APK
       run: |
