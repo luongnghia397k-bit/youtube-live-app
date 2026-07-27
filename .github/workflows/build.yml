@@ -43,7 +43,10 @@ jobs:
                     with open(path, 'r', encoding='utf-8') as f:
                         content = f.read()
                     
-                    # Sử dụng Regex để quét và ghi đè toàn bộ dòng chứa biến lỗi
+                    # 1. Sửa lỗi mất dấu gạch chéo ngược quanh $videoInput và $fullDestination
+                    content = content.replace('val ffmpegCmd = "-re $loopFlag -i "$videoInput" -c:v copy -c:a aac -f flv "$fullDestination""', 'val ffmpegCmd = "-re $loopFlag -i \\"$videoInput\\" -c:v copy -c:a aac -f flv \\"$fullDestination\\""')
+
+                    # 2. Sử dụng Regex để quét và ghi đè toàn bộ dòng chứa biến lỗi
                     content = re.sub(r'.*log\.message.*', '                Log.d(TAG, "FFmpeg Log: ${log.message}")', content)
                     content = re.sub(r'.*(statistics\.videoFrameNumber|statistics\.bitrate).*', '                Log.d(TAG, "FFmpeg Stats - Frame: ${statistics.videoFrameNumber}, Bitrate: ${statistics.bitrate} kbps")', content)
 
@@ -82,7 +85,6 @@ jobs:
 
     - name: Build Android App with Gradle (Force Clean)
       run: |
-        # Chạy lệnh dọn sạch mọi cache biên dịch cũ trước khi dịch mới tinh
         ./gradlew clean assembleDebug --no-build-cache --no-daemon
 
     - name: Collect APK
