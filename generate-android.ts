@@ -114,10 +114,12 @@ include(":app")
 writeFileSecure('settings.gradle.kts', settingsContent);
 writeFileSecure('app/settings.gradle.kts', settingsContent);
 
-// 5. Tạo file gradle.properties kích hoạt AndroidX và cấp 3GB RAM tối ưu ở cả 2 cấp độ thư mục
+// 5. Tạo file gradle.properties kích hoạt AndroidX, cấp 3GB RAM và tắt sạch mọi cache biên dịch của Kotlin
 const gradlePropertiesContent = `android.useAndroidX=true
 org.gradle.jvmargs=-Xmx3072m -XX:MaxMetaspaceSize=512m
 org.gradle.daemon=false
+org.gradle.caching=false
+kotlin.incremental=false
 `;
 
 writeFileSecure('gradle.properties', gradlePropertiesContent);
