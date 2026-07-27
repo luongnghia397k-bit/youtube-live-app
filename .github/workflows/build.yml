@@ -8,91 +8,109 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Unzip Web project
-      run: |
-        if ls *.zip 1> /dev/null 2>&1; then
-          unzip *.zip -d .
-        fi
+      - name: Unzip Web project
+        run: |
+          if ls *.zip 1> /dev/null 2>&1; then
+            unzip *.zip -d .
+          fi
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: 20
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
 
-    - name: Install dependencies
-      run: npm install
+      - name: Install dependencies
+        run: npm install
 
-    - name: Extract Android Code from Web project
-      run: npx tsx generate-android.ts
+      - name: Extract Android Code from Web project
+        run: npx tsx generate-android.ts
 
-    - name: Patch Kotlin files directly with Python
-      run: |
-        python3 -c "
-        import os
-        for root, dirs, files in os.walk('.'):
-            for file in files:
-                if file == 'RtmpStreamService.kt':
-                    path = os.path.join(root, file)
-                    print('=== Sửa file:', path)
-                    with open(path, 'r', encoding='utf-8') as f:
-                        content = f.read()
-                    
-                    # Thay thế sạch lỗi chuỗi Log và Stats (Không dùng dấu gạch chéo ngược)
-                    content = content.replace('\"\${' + \"'\${log.message}'\" + '}\"', '\"\${log.message}\"')
-                    content = content.replace('\"\${' + \"'\${statistics.videoFrameNumber}'\" + '}\"', '\"\${statistics.videoFrameNumber}\"')
-                    content = content.replace('\"\${' + \"'\${statistics.bitrate}'\" + '}\"', '\"\${statistics.bitrate}\"')
+      - name: Patch Kotlin files directly with Python
+        run: |
+          cat << 'EOF' > patch.py
+          import os
 
-                    with open(path, 'w', encoding='utf-8') as f:
-                        f.write(content)
-        "
+          for root, dirs, files in os.walk('.'):
+              for file in files:
+                  if file == 'RtmpStreamService.kt':
+                      path = os.path.join(root, file)
+                      print("=== Sửa file:", path)
 
-    - name: Patch MainActivity and AndroidManifest with Linux Bash (sed)
-      run: |
-        echo "=== Sửa lỗi YTLiveTheme trong MainActivity.kt ==="
-        find . -name "MainActivity.kt" -exec sed -i 's/import com.ytlive.rtmpstreamer.ui.theme.YTLiveTheme//g' {} +
-        find . -name "MainActivity.kt" -exec sed -i 's/YTLiveTheme/MaterialTheme/g' {} +
-        
-        echo "=== Sửa lỗi AndroidManifest.xml (Icon & Theme) ==="
-        find . -name "AndroidManifest.xml" -exec sed -i 's/@mipmap\/ic_launcher/@android:drawable\/sym_def_app_icon/g' {} +
-        find . -name "AndroidManifest.xml" -exec sed -i 's/@mipmap\/ic_launcher_round/@android:drawable\/sym_def_app_icon/g' {} +
-        find . -name "AndroidManifest.xml" -exec sed -i 's/@style\/Theme\.YTLiveStreamer/@android:style\/Theme.DeviceDefault.NoActionBar/g' {} +
+                      with open(path, "r", encoding="utf-8") as f:
+                          content = f.read()
 
-    - name: Debug RtmpStreamService
-  run: |
-    echo "=== Danh sách file ==="
-    find . -name "RtmpStreamService.kt"
+                      content = content.replace(
+                          "FFmpeg Log: ${'${log.message}'}",
+                          "FFmpeg Log: ${log.message}"
+                      )
 
-    echo "=== Đếm số file ==="
-    find . -name "RtmpStreamService.kt" | wc -l
+                      content = content.replace(
+                          "Frame: ${'${statistics.videoFrameNumber}'}",
+                          "Frame: ${statistics.videoFrameNumber}"
+                      )
 
-    echo "=== Nội dung file ==="
-    find . -name "RtmpStreamService.kt" -exec nl -ba {} \;
+                      content = content.replace(
+                          "Bitrate: ${'${statistics.bitrate}'}",
+                          "Bitrate: ${statistics.bitrate}"
+                      )
 
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
+                      with open(path, "w", encoding="utf-8") as f:
+                          f.write(content)
 
-    - name: Generate Gradle Wrapper
-      run: |
-        gradle wrapper --gradle-version 8.7
-        chmod +x gradlew
+          print("=== Đã vá thành công ===")
+          EOF
 
-    - name: Build Android App with Gradle
-      run: ./gradlew assembleDebug
+          python3 patch.py
 
-    - name: Collect APK
-      run: |
-        mkdir -p build-out
-        find . -name "*-debug.apk" -exec cp {} build-out/ \;
+      - name: Patch MainActivity and AndroidManifest
+        run: |
+          echo "=== Patch MainActivity ==="
 
-    - name: Upload APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: app-debug
-        path: build-out/*.apk
+          find . -name "MainActivity.kt" -exec sed -i 's/import com.ytlive.rtmpstreamer.ui.theme.YTLiveTheme//g' {} +
+          find . -name "MainActivity.kt" -exec sed -i 's/YTLiveTheme/MaterialTheme/g' {} +
+
+          echo "=== Patch Manifest ==="
+
+          find . -name "AndroidManifest.xml" -exec sed -i 's/@mipmap\/ic_launcher/@android:drawable\/sym_def_app_icon/g' {} +
+          find . -name "AndroidManifest.xml" -exec sed -i 's/@mipmap\/ic_launcher_round/@android:drawable\/sym_def_app_icon/g' {} +
+          find . -name "AndroidManifest.xml" -exec sed -i 's/@style\/Theme\.YTLiveStreamer/@android:style\/Theme.DeviceDefault.NoActionBar/g' {} +
+
+      - name: Debug RtmpStreamService
+        run: |
+          echo "=== Danh sách file ==="
+          find . -name "RtmpStreamService.kt"
+
+          echo "=== Đếm số file ==="
+          find . -name "RtmpStreamService.kt" | wc -l
+
+          echo "=== Nội dung file ==="
+          find . -name "RtmpStreamService.kt" -exec cat {} \;
+                - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Generate Gradle Wrapper
+        run: |
+          gradle wrapper --gradle-version 8.7
+          chmod +x gradlew
+
+      - name: Build Android App with Gradle
+        run: ./gradlew assembleDebug
+
+      - name: Collect APK
+        run: |
+          mkdir -p build-out
+          find . -name "*-debug.apk" -exec cp {} build-out/ \;
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: build-out/*.apk
