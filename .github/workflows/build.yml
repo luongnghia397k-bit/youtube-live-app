@@ -29,6 +29,24 @@ jobs:
     - name: Extract Android Code from Web project
       run: npx tsx generate-android.ts
 
+    - name: Patch Kotlin and XML files directly with Linux Bash (sed)
+      run: |
+        echo "=== 1. Sửa cú pháp lỗi RtmpStreamService.kt ==="
+        find . -name "RtmpStreamService.kt" -exec sed -i 's/FFmpeg Log: .*/FFmpeg Log: ${log.message}")/g' {} +
+        find . -name "RtmpStreamService.kt" -exec sed -i 's/FFmpeg Stats - Frame: .*/FFmpeg Stats - Frame: ${statistics.videoFrameNumber}, Bitrate: ${statistics.bitrate} kbps")/g' {} +
+        
+        echo "=== 2. Sửa lỗi YTLiveTheme trong MainActivity.kt ==="
+        find . -name "MainActivity.kt" -exec sed -i 's/import com.ytlive.rtmpstreamer.ui.theme.YTLiveTheme//g' {} +
+        find . -name "MainActivity.kt" -exec sed -i 's/YTLiveTheme/MaterialTheme/g' {} +
+        
+        echo "=== 3. Sửa lỗi AndroidManifest.xml (Icon & Theme) ==="
+        find . -name "AndroidManifest.xml" -exec sed -i 's/@mipmap\/ic_launcher/@android:drawable\/sym_def_app_icon/g' {} +
+        find . -name "AndroidManifest.xml" -exec sed -i 's/@mipmap\/ic_launcher_round/@android:drawable\/sym_def_app_icon/g' {} +
+        find . -name "AndroidManifest.xml" -exec sed -i 's/@style\/Theme\.YTLiveStreamer/@android:style\/Theme.DeviceDefault.NoActionBar/g' {} +
+
+        echo "=== 4. Kiểm tra dòng code đã sửa trong RtmpStreamService.kt ==="
+        find . -name "RtmpStreamService.kt" -exec grep -n "FFmpeg Log" {} +
+
     - name: Set up JDK 17
       uses: actions/setup-java@v4
       with:
