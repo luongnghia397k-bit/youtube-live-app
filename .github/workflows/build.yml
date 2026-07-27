@@ -41,19 +41,10 @@ jobs:
                     with open(path, 'r', encoding='utf-8') as f:
                         content = f.read()
                     
-                    # Thay thế sạch mọi biến thể lỗi của chuỗi Log
-                    content = content.replace('\${' + \"'\" + '\${log.message}' + \"'\" + '}', '\${log.message}')
-                    content = content.replace('\${' + \"'\" + '\\\${log.message}' + \"'\" + '}', '\${log.message}')
-                    content = content.replace('\\\${' + \"'\" + '\\\${log.message}' + \"'\" + '}', '\${log.message}')
-                    
-                    # Thay thế sạch mọi biến thể lỗi của chuỗi Stats
-                    content = content.replace('\${' + \"'\" + '\${statistics.videoFrameNumber}' + \"'\" + '}', '\${statistics.videoFrameNumber}')
-                    content = content.replace('\${' + \"'\" + '\\\${statistics.videoFrameNumber}' + \"'\" + '}', '\${statistics.videoFrameNumber}')
-                    content = content.replace('\\\${' + \"'\" + '\\\${statistics.videoFrameNumber}' + \"'\" + '}', '\${statistics.videoFrameNumber}')
-
-                    content = content.replace('\${' + \"'\" + '\${statistics.bitrate}' + \"'\" + '}', '\${statistics.bitrate}')
-                    content = content.replace('\${' + \"'\" + '\\\${statistics.bitrate}' + \"'\" + '}', '\${statistics.bitrate}')
-                    content = content.replace('\\\${' + \"'\" + '\\\${statistics.bitrate}' + \"'\" + '}', '\${statistics.bitrate}')
+                    # Thay thế sạch lỗi chuỗi Log và Stats (Không dùng dấu gạch chéo ngược)
+                    content = content.replace('\"\${' + \"'\${log.message}'\" + '}\"', '\"\${log.message}\"')
+                    content = content.replace('\"\${' + \"'\${statistics.videoFrameNumber}'\" + '}\"', '\"\${statistics.videoFrameNumber}\"')
+                    content = content.replace('\"\${' + \"'\${statistics.bitrate}'\" + '}\"', '\"\${statistics.bitrate}\"')
 
                     with open(path, 'w', encoding='utf-8') as f:
                         f.write(content)
