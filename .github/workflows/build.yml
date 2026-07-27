@@ -4,7 +4,7 @@ on:
   push:
     branches: [ "main" ]
   workflow_dispatch:
-  
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -37,22 +37,66 @@ jobs:
 
         for root, dirs, files in os.walk('.'):
             for file in files:
+                # 1. Sửa tệp RtmpStreamService.kt
                 if file == 'RtmpStreamService.kt':
                     path = os.path.join(root, file)
-                    print('=== Tiến hành vá lỗi file bằng Regex:', path)
+                    print('=== Sửa file RtmpStreamService.kt:', path)
                     with open(path, 'r', encoding='utf-8') as f:
                         content = f.read()
                     
-                    # 1. Sửa lỗi mất dấu gạch chéo ngược quanh $videoInput và $fullDestination
+                    # Sửa lỗi mất dấu gạch chéo ngược quanh $videoInput và $fullDestination
                     content = content.replace('val ffmpegCmd = "-re $loopFlag -i "$videoInput" -c:v copy -c:a aac -f flv "$fullDestination""', 'val ffmpegCmd = "-re $loopFlag -i \\"$videoInput\\" -c:v copy -c:a aac -f flv \\"$fullDestination\\""')
 
-                    # 2. Sử dụng Regex để quét và ghi đè toàn bộ dòng chứa biến lỗi
+                    # Sử dụng Regex để quét và ghi đè toàn bộ dòng chứa biến lỗi
                     content = re.sub(r'.*log\.message.*', '                Log.d(TAG, "FFmpeg Log: ${log.message}")', content)
                     content = re.sub(r'.*(statistics\.videoFrameNumber|statistics\.bitrate).*', '                Log.d(TAG, "FFmpeg Stats - Frame: ${statistics.videoFrameNumber}, Bitrate: ${statistics.bitrate} kbps")', content)
 
                     with open(path, 'w', encoding='utf-8') as f:
                         f.write(content)
-        print("=== Đã thực thi bản vá lỗi bằng Regex thành công ===")
+
+                # 2. Sửa tệp MainActivity.kt để lưu video vào cache tránh lỗi văng app
+                if file == 'MainActivity.kt':
+                    path = os.path.join(root, file)
+                    print('=== Sửa file MainActivity.kt:', path)
+                    with open(path, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                    
+                    # Thay thế launcher cũ bằng launcher mới có sao chép video vào cache
+                    old_launcher = 'selectedVideoUri = it\n            selectedVideoName = it.lastPathSegment ?: "Selected Video.mp4"\n            Toast.makeText(context, "Video selected!", Toast.LENGTH_SHORT).show()'
+                    new_launcher = 'val cachePath = copyUriToCache(context, it)\n            if (cachePath != null) {\n                selectedVideoUri = Uri.parse(cachePath)\n                selectedVideoName = "Selected Video (Cached)"\n                Toast.makeText(context, "Video prepared!", Toast.LENGTH_SHORT).show()\n            } else {\n                Toast.makeText(context, "Failed to process video!", Toast.LENGTH_SHORT).show()\n            }'
+                    
+                    # Bộ lọc dự phòng xử lý xuống dòng của Windows/Linux
+                    content = content.replace(old_launcher.replace('\n', '\r\n'), new_launcher.replace('\n', '\r\n'))
+                    content = content.replace(old_launcher, new_launcher)
+                    
+                    # Thêm hàm copyUriToCache vào cuối file nếu chưa có
+                    if 'fun copyUriToCache' not in content:
+                        helper_function = """
+
+        fun copyUriToCache(context: android.content.Context, uri: android.net.Uri): String? {
+            try {
+                val inputStream = context.contentResolver.openInputStream(uri) ?: return null
+                val tempFile = java.io.File(context.cacheDir, "temp_stream.mp4")
+                if (tempFile.exists()) tempFile.delete()
+                val outputStream = java.io.FileOutputStream(tempFile)
+                inputStream.use { input ->
+                    outputStream.use { output ->
+                        input.copyTo(output)
+                    }
+                }
+                return tempFile.absolutePath
+            } catch (e: Exception) {
+                e.printStackTrace()
+                return null
+            }
+        }
+        """
+                        content = content + helper_function
+                        print('-> Đã chèn hàm copyUriToCache vào cuối file thành công!')
+                    
+                    with open(path, 'w', encoding='utf-8') as f:
+                        f.write(content)
+        print("=== Đã thực thi bản vá lỗi bằng Python thành công ===")
         EOF
         python3 patch.py
 
@@ -67,10 +111,10 @@ jobs:
         find . -name "AndroidManifest.xml" -exec sed -i 's/@mipmap\/ic_launcher_round/@android:drawable\/sym_def_app_icon/g' {} +
         find . -name "AndroidManifest.xml" -exec sed -i 's/@style\/Theme\.YTLiveStreamer/@android:style\/Theme.DeviceDefault.NoActionBar/g' {} +
 
-    - name: Print RtmpStreamService.kt lines 65-95 for verification
+    - name: Print MainActivity.kt last 40 lines for verification
       run: |
-        echo "=== KIỂM TRA TOÀN BỘ CÚ PHÁP CÁC DÒNG 65-95 ==="
-        find . -name "RtmpStreamService.kt" -exec sed -n '65,95p' {} \;
+        echo "=== KIỂM TRA ĐUÔI TỆP MAINACTIVITY ==="
+        find . -name "MainActivity.kt" -exec tail -n 40 {} \;
 
     - name: Set up JDK 17
       uses: actions/setup-java@v4
