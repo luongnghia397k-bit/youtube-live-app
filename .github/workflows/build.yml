@@ -33,22 +33,23 @@ jobs:
       run: |
         cat << 'EOF' > patch.py
         import os
+        import re
+
         for root, dirs, files in os.walk('.'):
             for file in files:
                 if file == 'RtmpStreamService.kt':
                     path = os.path.join(root, file)
-                    print('=== Sửa file:', path)
+                    print('=== Tiến hành vá lỗi file bằng Regex:', path)
                     with open(path, 'r', encoding='utf-8') as f:
                         content = f.read()
                     
-                    # Sửa trực tiếp tuyệt đối không sử dụng ký tự gạch chéo ngược lộn xộn
-                    content = content.replace("FFmpeg Log: ${'${log.message}'}", "FFmpeg Log: ${log.message}")
-                    content = content.replace("Frame: ${'${statistics.videoFrameNumber}'}", "Frame: ${statistics.videoFrameNumber}")
-                    content = content.replace("Bitrate: ${'${statistics.bitrate}'}", "Bitrate: ${statistics.bitrate}")
+                    # Sử dụng Regex để quét và ghi đè toàn bộ dòng chứa biến lỗi
+                    content = re.sub(r'.*log\.message.*', '                Log.d(TAG, "FFmpeg Log: ${log.message}")', content)
+                    content = re.sub(r'.*(statistics\.videoFrameNumber|statistics\.bitrate).*', '                Log.d(TAG, "FFmpeg Stats - Frame: ${statistics.videoFrameNumber}, Bitrate: ${statistics.bitrate} kbps")', content)
 
                     with open(path, 'w', encoding='utf-8') as f:
                         f.write(content)
-        print("=== Đã tạo và thực thi file vá lỗi Python thành công ===")
+        print("=== Đã thực thi bản vá lỗi bằng Regex thành công ===")
         EOF
         python3 patch.py
 
