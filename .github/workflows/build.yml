@@ -92,8 +92,3 @@ jobs:
       with:
         name: app-debug
         path: build-out/*.apk
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-debug
-          path: build-out/*.apk
