@@ -31,28 +31,66 @@ ANDROID_CODEBASE.forEach((file) => {
       .replace(/@style\/Theme\.YTLiveStreamer/g, '@android:style/Theme.DeviceDefault.NoActionBar');
   }
 
-  // Sửa lỗi thiếu Theme tùy chỉnh trong MainActivity (Thay thế bằng MaterialTheme mặc định)
+  // Sửa lỗi văng app trên Android 11+ (Tự động copy file vào thư mục Cache an toàn)
   if (file.filename.includes('MainActivity.kt')) {
-    fileContent = fileContent
-      .replace("import com.ytlive.rtmpstreamer.ui.theme.YTLiveTheme", "")
-      .replace(/YTLiveTheme/g, "MaterialTheme");
+    const originalLauncher = `    val videoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            selectedVideoUri = it
+            selectedVideoName = it.lastPathSegment ?: "Selected Video.mp4"
+            Toast.makeText(context, "Video selected!", Toast.LENGTH_SHORT).show()
+        }
+    }`;
+
+    const newLauncher = `    val videoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            val cachePath = copyUriToCache(context, it)
+            if (cachePath != null) {
+                selectedVideoUri = Uri.parse(cachePath)
+                selectedVideoName = "Selected Video (Cached)"
+                Toast.makeText(context, "Video prepared!", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(context, "Failed to process video!", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }`;
+
+    fileContent = fileContent.replace(originalLauncher, newLauncher);
+    
+    // Thêm hàm helper copyUriToCache vào cuối lớp MainActivity
+    const helperFunction = `\n\nfun copyUriToCache(context: android.content.Context, uri: Uri): String? {
+    try {
+        val inputStream = context.contentResolver.openInputStream(uri) ?: return null
+        val tempFile = java.io.File(context.cacheDir, "temp_stream.mp4")
+        if (tempFile.exists()) tempFile.delete()
+        val outputStream = java.io.FileOutputStream(tempFile)
+        inputStream.use { input ->
+            outputStream.use { output ->
+                input.copyTo(output)
+            }
+        }
+        return tempFile.absolutePath
+    } catch (e: Exception) {
+        e.printStackTrace()
+        return null
+    }
+}`;
+    
+    const lastBraceIndex = fileContent.lastIndexOf('}');
+    if (lastBraceIndex !== -1) {
+      fileContent = fileContent.substring(0, lastBraceIndex) + helperFunction + "\n}";
+    }
   }
 
-  // VÁ LỖI CÚ PHÁP TRỰC TIẾP TRONG BỘ NHỚ TRƯỚC KHI GHI FILE XUỐNG ĐĨA!
+  // Sửa đường dẫn videoInput trong RtmpStreamService.kt để đọc trực tiếp từ cache file
   if (file.filename.includes('RtmpStreamService.kt')) {
-    console.log("=== Đang sửa lỗi cú pháp RtmpStreamService.kt trực tiếp trong bộ nhớ ===");
-    const lines = fileContent.split('\n');
-    const updatedLines = lines.map(line => {
-      // Tìm dòng log và ghi đè thẳng bằng dòng Kotlin chuẩn sạch lỗi
-      if (line.includes('log.message') || line.includes('FFmpeg Log:')) {
-        return '                Log.d(TAG, "FFmpeg Log: ${log.message}")';
-      }
-      if (line.includes('statistics.videoFrameNumber') || line.includes('statistics.bitrate') || line.includes('FFmpeg Stats')) {
-        return '                Log.d(TAG, "FFmpeg Stats - Frame: ${statistics.videoFrameNumber}, Bitrate: ${statistics.bitrate} kbps")';
-      }
-      return line;
-    });
-    fileContent = updatedLines.join('\n');
+    fileContent = fileContent.replace(
+      'val videoInput = Uri.parse(videoUriStr).path ?: videoUriStr',
+      'val videoInput = videoUriStr'
+    );
   }
 
   // Ghi đè vào đường dẫn gốc (app/src/main/...)
@@ -114,7 +152,7 @@ include(":app")
 writeFileSecure('settings.gradle.kts', settingsContent);
 writeFileSecure('app/settings.gradle.kts', settingsContent);
 
-// 5. Tạo file gradle.properties kích hoạt AndroidX, cấp 3GB RAM và tắt sạch mọi cache biên dịch của Kotlin
+// 5. Tạo file gradle.properties kích hoạt AndroidX và cấp 3GB RAM tối ưu ở cả 2 cấp độ thư mục
 const gradlePropertiesContent = `android.useAndroidX=true
 org.gradle.jvmargs=-Xmx3072m -XX:MaxMetaspaceSize=512m
 org.gradle.daemon=false
