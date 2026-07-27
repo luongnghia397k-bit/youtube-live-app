@@ -9,62 +9,18 @@ function writeFileSecure(filePath: string, content: string) {
     fs.mkdirSync(dir, { recursive: true });
   }
   fs.writeFileSync(filePath, content);
-  console.log(`Đã trích xuất: ${filePath}`);
 }
 
-// 1. Tạo thư mục và ghi file Android vật lý từ text string
+// 1. Tạo thư mục và ghi file Android vật lý từ text string ban đầu
 ANDROID_CODEBASE.forEach((file) => {
-  let fileContent = file.content;
-  
-  // Tự động thay thế thư viện FFmpegKit cũ bằng phiên bản cộng đồng duy trì (bản 6.0.1 chuẩn)
-  if (file.filename.includes('build.gradle.kts') || file.path.includes('build.gradle.kts')) {
-    fileContent = fileContent.replace(
-      'com.arthenica:ffmpeg-kit-full:6.0-2',
-      'dev.ffmpegkit-maintained:ffmpeg-kit-free:6.0.1'
-    );
-  }
-
-  // Sửa lỗi thiếu icon và style theme bằng cách trỏ về hệ thống mặc định của Android
-  if (file.filename === 'AndroidManifest.xml') {
-    fileContent = fileContent
-      .replace('@mipmap/ic_launcher', '@android:drawable/sym_def_app_icon')
-      .replace('@mipmap/ic_launcher_round', '@android:drawable/sym_def_app_icon')
-      .replace(/@style\/Theme\.YTLiveStreamer/g, '@android:style/Theme.DeviceDefault.NoActionBar');
-  }
-
-  // Sửa lỗi thiếu Theme tùy chỉnh trong MainActivity (Thay thế bằng MaterialTheme mặc định)
-  if (file.filename.includes('MainActivity.kt')) {
-    fileContent = fileContent
-      .replace("import com.ytlive.rtmpstreamer.ui.theme.YTLiveTheme", "")
-      .replace(/YTLiveTheme/g, "MaterialTheme");
-  }
-
-  // Sửa lỗi cú pháp trích xuất chuỗi nội suy bằng phương pháp ghi đè dòng (Line-by-line) an toàn tuyệt đối
-  if (file.filename.includes('RtmpStreamService.kt')) {
-    const lines = fileContent.split('\n');
-    const updatedLines = lines.map(line => {
-      if (line.includes('FFmpeg Log:')) {
-        return '                Log.d(TAG, "FFmpeg Log: ${log.message}")';
-      }
-      if (line.includes('FFmpeg Stats - Frame:')) {
-        return '                Log.d(TAG, "FFmpeg Stats - Frame: ${statistics.videoFrameNumber}, Bitrate: ${statistics.bitrate} kbps")';
-      }
-      return line;
-    });
-    fileContent = updatedLines.join('\n');
-  }
-
-  // Ghi đè vào đường dẫn gốc (app/src/main/...)
-  writeFileSecure(file.path, fileContent);
-
-  // Nhân đôi quá trình: Ghi đè vào đường dẫn lồng nhau dự phòng (app/app/src/main/...)
+  writeFileSecure(file.path, file.content);
   if (file.path.startsWith('app/')) {
     const nestedPath = file.path.replace('app/', 'app/app/');
-    writeFileSecure(nestedPath, fileContent);
+    writeFileSecure(nestedPath, file.content);
   }
 });
 
-// 2. Tạo file libs.versions.toml ở cả 2 cấp độ thư mục
+// 2. Tạo cấu hình Gradle phụ trợ
 const libsVersionsContent = `[versions]
 agp = "8.4.0"
 kotlin = "2.0.0"
@@ -77,21 +33,17 @@ android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 `;
-
 writeFileSecure('gradle/libs.versions.toml', libsVersionsContent);
 writeFileSecure('app/gradle/libs.versions.toml', libsVersionsContent);
 
-// 3. Tạo file build.gradle.kts ở thư mục gốc
 const rootBuildContent = `plugins {
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.kotlin.android) apply false
     alias(libs.plugins.kotlin.compose) apply false
 }
 `;
-
 writeFileSecure('build.gradle.kts', rootBuildContent);
 
-// 4. Tạo file cấu hình settings.gradle.kts ở cả 2 cấp độ thư mục
 const settingsContent = `pluginManagement {
     repositories {
         google()
@@ -109,15 +61,93 @@ dependencyResolutionManagement {
 rootProject.name = "YTLiveStreamer"
 include(":app")
 `;
-
 writeFileSecure('settings.gradle.kts', settingsContent);
 writeFileSecure('app/settings.gradle.kts', settingsContent);
 
-// 5. Tạo file gradle.properties tối ưu RAM và kích hoạt AndroidX ở cả 2 cấp độ thư mục
 const gradlePropertiesContent = `android.useAndroidX=true
 org.gradle.jvmargs=-Xmx3072m -XX:MaxMetaspaceSize=512m
 org.gradle.daemon=false
 `;
-
 writeFileSecure('gradle.properties', gradlePropertiesContent);
 writeFileSecure('app/gradle.properties', gradlePropertiesContent);
+
+
+// 3. HÀM ROBOT QUÉT VÀ SỬA TOÀN BỘ WORKSPACE (BẮT CẢ CÁC BẢN SAO TRONG FILE ZIP)
+function scanAndFixAllFiles(dir: string) {
+  const files = fs.readdirSync(dir);
+  for (const file of files) {
+    const fullPath = path.join(dir, file);
+    
+    // Bỏ qua các thư mục hệ thống để tránh quét chậm
+    if (file === 'node_modules' || file === '.git' || file === '.github' || file === 'build-out' || file === 'gradle' || file === '.gradle') {
+      continue;
+    }
+    
+    const stat = fs.statSync(fullPath);
+    if (stat.isDirectory()) {
+      scanAndFixAllFiles(fullPath);
+    } else {
+      let content = fs.readFileSync(fullPath, 'utf8');
+      let changed = false;
+
+      // Vá lỗi RtmpStreamService.kt bằng cách ghi đè trực tiếp dòng chứa log
+      if (file === 'RtmpStreamService.kt') {
+        const lines = content.split('\n');
+        const updatedLines = lines.map(line => {
+          if (line.includes('FFmpeg Log:')) {
+            changed = true;
+            return '                Log.d(TAG, "FFmpeg Log: ${log.message}")';
+          }
+          if (line.includes('FFmpeg Stats - Frame:')) {
+            changed = true;
+            return '                Log.d(TAG, "FFmpeg Stats - Frame: ${statistics.videoFrameNumber}, Bitrate: ${statistics.bitrate} kbps")';
+          }
+          return line;
+        });
+        content = updatedLines.join('\n');
+      }
+
+      // Sửa lỗi Theme tùy chỉnh trong MainActivity.kt
+      if (file === 'MainActivity.kt') {
+        if (content.includes('import com.ytlive.rtmpstreamer.ui.theme.YTLiveTheme') || content.includes('YTLiveTheme')) {
+          content = content
+            .replace("import com.ytlive.rtmpstreamer.ui.theme.YTLiveTheme", "")
+            .replace(/YTLiveTheme/g, "MaterialTheme");
+          changed = true;
+        }
+      }
+
+      // Sửa lỗi thiếu icon và style theme trong AndroidManifest.xml
+      if (file === 'AndroidManifest.xml') {
+        if (content.includes('@mipmap/ic_launcher') || content.includes('@style/Theme.YTLiveStreamer')) {
+          content = content
+            .replace('@mipmap/ic_launcher', '@android:drawable/sym_def_app_icon')
+            .replace('@mipmap/ic_launcher_round', '@android:drawable/sym_def_app_icon')
+            .replace(/@style\/Theme\.YTLiveStreamer/g, '@android:style/Theme.DeviceDefault.NoActionBar');
+          changed = true;
+        }
+      }
+
+      // Sửa lỗi build.gradle.kts để đổi thư viện FFmpegKit
+      if (file === 'build.gradle.kts') {
+        if (content.includes('com.arthenica:ffmpeg-kit-full:6.0-2')) {
+          content = content.replace(
+            'com.arthenica:ffmpeg-kit-full:6.0-2',
+            'dev.ffmpegkit-maintained:ffmpeg-kit-free:6.0.1'
+          );
+          changed = true;
+        }
+      }
+
+      if (changed) {
+        fs.writeFileSync(fullPath, content, 'utf8');
+        console.log(`-> Robot đã vá thành công tệp tin tại: ${fullPath}`);
+      }
+    }
+  }
+}
+
+// Kích hoạt trình quét dọn toàn diện
+console.log("=== Bắt đầu quét và sửa toàn bộ workspace ===");
+scanAndFixAllFiles('.');
+console.log("=== Hoàn tất quét dọn ===");
