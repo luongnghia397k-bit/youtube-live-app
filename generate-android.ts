@@ -2,13 +2,18 @@ import fs from 'fs';
 import path from 'path';
 import { ANDROID_CODEBASE } from './src/data/androidCodebase';
 
-// 1. Tạo thư mục và ghi file Android vật lý từ text string
-ANDROID_CODEBASE.forEach((file) => {
-  const dir = path.dirname(file.path);
+// Hàm phụ trợ ghi file và tự tạo thư mục lồng nhau nếu chưa có
+function writeFileSecure(filePath: string, content: string) {
+  const dir = path.dirname(filePath);
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
+  fs.writeFileSync(filePath, content);
+  console.log(`Đã trích xuất: ${filePath}`);
+}
 
+// 1. Tạo thư mục và ghi file Android vật lý từ text string
+ANDROID_CODEBASE.forEach((file) => {
   let fileContent = file.content;
   
   // Tự động thay thế thư viện FFmpegKit cũ bằng phiên bản cộng đồng duy trì (bản 6.0.1 chuẩn)
@@ -49,16 +54,17 @@ ANDROID_CODEBASE.forEach((file) => {
     fileContent = updatedLines.join('\n');
   }
 
-  fs.writeFileSync(file.path, fileContent);
-  console.log(`Đã trích xuất: ${file.path}`);
+  // Ghi đè vào đường dẫn gốc (app/src/main/...)
+  writeFileSecure(file.path, fileContent);
+
+  // Nhân đôi quá trình: Ghi đè vào đường dẫn lồng nhau dự phòng (app/app/src/main/...)
+  if (file.path.startsWith('app/')) {
+    const nestedPath = file.path.replace('app/', 'app/app/');
+    writeFileSecure(nestedPath, fileContent);
+  }
 });
 
-// 2. Tạo thư mục gradle/ và ghi file libs.versions.toml
-const gradleDir = 'gradle';
-if (!fs.existsSync(gradleDir)) {
-  fs.mkdirSync(gradleDir, { recursive: true });
-}
-
+// 2. Tạo file libs.versions.toml ở cả 2 cấp độ thư mục
 const libsVersionsContent = `[versions]
 agp = "8.4.0"
 kotlin = "2.0.0"
@@ -72,8 +78,8 @@ kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 `;
 
-fs.writeFileSync(path.join(gradleDir, 'libs.versions.toml'), libsVersionsContent);
-console.log('Đã tạo gradle/libs.versions.toml');
+writeFileSecure('gradle/libs.versions.toml', libsVersionsContent);
+writeFileSecure('app/gradle/libs.versions.toml', libsVersionsContent);
 
 // 3. Tạo file build.gradle.kts ở thư mục gốc
 const rootBuildContent = `plugins {
@@ -83,10 +89,9 @@ const rootBuildContent = `plugins {
 }
 `;
 
-fs.writeFileSync('build.gradle.kts', rootBuildContent);
-console.log('Đã tạo build.gradle.kts ở thư mục gốc');
+writeFileSecure('build.gradle.kts', rootBuildContent);
 
-// 4. Tạo file cấu hình settings.gradle.kts ở thư mục gốc
+// 4. Tạo file cấu hình settings.gradle.kts ở cả 2 cấp độ thư mục
 const settingsContent = `pluginManagement {
     repositories {
         google()
@@ -105,14 +110,14 @@ rootProject.name = "YTLiveStreamer"
 include(":app")
 `;
 
-fs.writeFileSync('settings.gradle.kts', settingsContent);
-console.log('Đã tạo settings.gradle.kts');
+writeFileSecure('settings.gradle.kts', settingsContent);
+writeFileSecure('app/settings.gradle.kts', settingsContent);
 
-// 5. Tạo file gradle.properties kích hoạt AndroidX và cấp 3GB RAM tối ưu cho đám mây
+// 5. Tạo file gradle.properties tối ưu RAM và kích hoạt AndroidX ở cả 2 cấp độ thư mục
 const gradlePropertiesContent = `android.useAndroidX=true
 org.gradle.jvmargs=-Xmx3072m -XX:MaxMetaspaceSize=512m
 org.gradle.daemon=false
 `;
 
-fs.writeFileSync('gradle.properties', gradlePropertiesContent);
-console.log('Đã tạo gradle.properties tối ưu RAM thành công');
+writeFileSecure('gradle.properties', gradlePropertiesContent);
+writeFileSecure('app/gradle.properties', gradlePropertiesContent);
