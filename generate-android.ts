@@ -31,7 +31,7 @@ ANDROID_CODEBASE.forEach((file) => {
       .replace(/@style\/Theme\.YTLiveStreamer/g, '@android:style/Theme.DeviceDefault.NoActionBar');
   }
 
-  // Sửa lỗi văng app trên Android 11+ (Ghi đè launcher và append hàm ở cuối file hoàn toàn sạch lỗi)
+  // Sửa lỗi văng app trên Android 11+ (Tự động copy file vào thư mục Cache an toàn)
   if (file.filename.includes('MainActivity.kt')) {
     const originalLauncher = `    val videoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -82,18 +82,46 @@ ANDROID_CODEBASE.forEach((file) => {
     fileContent = fileContent + helperFunction;
   }
 
-  // Sửa đường dẫn videoInput trong RtmpStreamService.kt để đọc trực tiếp từ cache file
+  // Sửa đường dẫn videoInput và vá các lỗi tương thích API chạy ngầm trên Android 11
   if (file.filename.includes('RtmpStreamService.kt')) {
+    // 1. Thêm import cho ServiceInfo tương thích Android 11+
+    fileContent = fileContent.replace(
+      'import android.app.*',
+      'import android.app.*\nimport android.content.pm.ServiceInfo'
+    );
+
+    // 2. Sửa đường dẫn đọc video từ cache
     fileContent = fileContent.replace(
       'val videoInput = Uri.parse(videoUriStr).path ?: videoUriStr',
       'val videoInput = videoUriStr'
+    );
+
+    // 3. Sửa startForeground tương thích targetSdk 34 và Android 11 (Tránh lỗi MissingForegroundServiceTypeException)
+    fileContent = fileContent.replace(
+      'startForeground(NOTIFICATION_ID, notification)',
+      'if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {\n' +
+      '                        startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)\n' +
+      '                    } else {\n' +
+      '                        startForeground(NOTIFICATION_ID, notification)\n' +
+      '                    }'
+    );
+
+    // 4. Sửa tất cả các lỗi gọi stopForeground(int) lỗi thời trên Android 11 (API 30) thành stopForeground(boolean)
+    fileContent = fileContent.replace(
+      /stopForeground\(STOP_FOREGROUND_REMOVE\)/g,
+      'if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {\n' +
+      '                    stopForeground(STOP_FOREGROUND_REMOVE)\n' +
+      '                } else {\n' +
+      '                    @Suppress("DEPRECATION")\n' +
+      '                    stopForeground(true)\n' +
+      '                }'
     );
   }
 
   // Ghi đè vào đường dẫn gốc (app/src/main/...)
   writeFileSecure(file.path, fileContent);
 
-  // Nhân đôi quá trình: Ghi đè vào đường dẫn lồng nhau dự phòng (app/app/src/main/...)
+  // Ghi đè vào đường dẫn lồng nhau dự phòng (app/app/src/main/...)
   if (file.path.startsWith('app/')) {
     const nestedPath = file.path.replace('app/', 'app/app/');
     writeFileSecure(nestedPath, fileContent);
