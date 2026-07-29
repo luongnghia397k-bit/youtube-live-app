@@ -31,7 +31,7 @@ ANDROID_CODEBASE.forEach((file) => {
       .replace(/@style\/Theme\.YTLiveStreamer/g, '@android:style/Theme.DeviceDefault.NoActionBar');
   }
 
-  // Sửa lỗi văng app trên Android 11+ (Tự động copy file vào thư mục Cache an toàn)
+  // Sửa lỗi văng app trên Android 11+ (Ghi đè launcher và append hàm ở cuối file hoàn toàn sạch lỗi)
   if (file.filename.includes('MainActivity.kt')) {
     const originalLauncher = `    val videoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -60,8 +60,8 @@ ANDROID_CODEBASE.forEach((file) => {
 
     fileContent = fileContent.replace(originalLauncher, newLauncher);
     
-    // Thêm hàm helper copyUriToCache vào cuối lớp MainActivity
-    const helperFunction = `\n\nfun copyUriToCache(context: android.content.Context, uri: Uri): String? {
+    // Ghi hàm helper copyUriToCache vào rìa ngoài cùng cuối tệp để tránh làm lỗi ngoặc nhọn
+    const helperFunction = `\n\nfun copyUriToCache(context: android.content.Context, uri: android.net.Uri): String? {
     try {
         val inputStream = context.contentResolver.openInputStream(uri) ?: return null
         val tempFile = java.io.File(context.cacheDir, "temp_stream.mp4")
@@ -79,10 +79,7 @@ ANDROID_CODEBASE.forEach((file) => {
     }
 }`;
     
-    const lastBraceIndex = fileContent.lastIndexOf('}');
-    if (lastBraceIndex !== -1) {
-      fileContent = fileContent.substring(0, lastBraceIndex) + helperFunction + "\n}";
-    }
+    fileContent = fileContent + helperFunction;
   }
 
   // Sửa đường dẫn videoInput trong RtmpStreamService.kt để đọc trực tiếp từ cache file
