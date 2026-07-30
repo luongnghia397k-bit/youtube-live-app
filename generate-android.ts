@@ -190,11 +190,10 @@ rootProject.name = "YTLiveStreamer"
 include(":app")
 `;
 
-settingsContent = settingsContent.replace(/include\(":app"\)/g, 'include(":app")'); // Giữ nguyên cấu trúc chuẩn
 writeFileSecure('settings.gradle.kts', settingsContent);
 writeFileSecure('app/settings.gradle.kts', settingsContent);
 
-// 5. Tạo tệp gradle.properties kích hoạt AndroidX, cấp 3GB RAM và kích hoạt nén/giải nén thư viện hệ thống
+// 5. Tạo file gradle.properties kích hoạt AndroidX và cấp 3GB RAM tối ưu ở cả 2 cấp độ thư mục
 const gradlePropertiesContent = `android.useAndroidX=true
 org.gradle.jvmargs=-Xmx3072m -XX:MaxMetaspaceSize=512m
 org.gradle.daemon=false
@@ -207,7 +206,7 @@ writeFileSecure('gradle.properties', gradlePropertiesContent);
 writeFileSecure('app/gradle.properties', gradlePropertiesContent);
 
 
-// 6. HÀM ROBOT QUÉT VÀ SỬA TOÀN BỘ WORKSPACE (BẢO VỆ ĐỒNG BỘ CỜ GIẢI NÉN THƯ VIỆN)
+// 6. HÀM ROBOT QUÉT VÀ SỬA TOÀN BỘ WORKSPACE (DỰ PHÒNG THÊM)
 function scanAndFixAllFiles(dir: string) {
   const files = fs.readdirSync(dir);
   for (const file of files) {
@@ -239,7 +238,7 @@ function scanAndFixAllFiles(dir: string) {
         });
         content = updatedLines.join('\n');
         
-        // Robot tự động đổi lệnh dừng dịch vụ ngầm tương thích với Android cũ
+        // Robot dự phòng tự động đổi lệnh dừng dịch vụ ngầm tương thích với Android cũ
         content = content.replace(/stopForeground\(STOP_FOREGROUND_REMOVE\)/g, 'stopForeground(true)');
         changed = true;
       }
