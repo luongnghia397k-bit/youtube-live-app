@@ -82,46 +82,32 @@ ANDROID_CODEBASE.forEach((file) => {
     fileContent = fileContent + helperFunction;
   }
 
-  // Sửa đường dẫn videoInput và vá các lỗi tương thích API chạy ngầm trên Android 11
+  // Sửa lỗi đường dẫn videoInput và lỗi tương thích chạy ngầm trên Android 11 trong RtmpStreamService.kt
   if (file.filename.includes('RtmpStreamService.kt')) {
-    // 1. Thêm import cho ServiceInfo tương thích Android 11+
-    fileContent = fileContent.replace(
-      'import android.app.*',
-      'import android.app.*\nimport android.content.pm.ServiceInfo'
-    );
-
-    // 2. Sửa đường dẫn đọc video từ cache
+    // 1. Đọc trực tiếp đường dẫn cache video từ MainActivity
     fileContent = fileContent.replace(
       'val videoInput = Uri.parse(videoUriStr).path ?: videoUriStr',
       'val videoInput = videoUriStr'
     );
 
-    // 3. Sửa startForeground tương thích targetSdk 34 và Android 11 (Tránh lỗi MissingForegroundServiceTypeException)
+    // 2. Thay thế lệnh dừng chạy ngầm bằng hàm tương thích với mọi Android cũ
+    fileContent = fileContent.replace(/stopForeground\(STOP_FOREGROUND_REMOVE\)/g, 'stopForeground(true)');
+
+    // 3. Tối ưu hóa lệnh khởi tạo dịch vụ chạy ngầm để tương thích với targetSdk 34
     fileContent = fileContent.replace(
       'startForeground(NOTIFICATION_ID, notification)',
-      'if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {\n' +
-      '                        startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)\n' +
+      'if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {\n' +
+      '                        startForeground(NOTIFICATION_ID, notification, android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)\n' +
       '                    } else {\n' +
       '                        startForeground(NOTIFICATION_ID, notification)\n' +
       '                    }'
-    );
-
-    // 4. Sửa tất cả các lỗi gọi stopForeground(int) lỗi thời trên Android 11 (API 30) thành stopForeground(boolean)
-    fileContent = fileContent.replace(
-      /stopForeground\(STOP_FOREGROUND_REMOVE\)/g,
-      'if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {\n' +
-      '                    stopForeground(STOP_FOREGROUND_REMOVE)\n' +
-      '                } else {\n' +
-      '                    @Suppress("DEPRECATION")\n' +
-      '                    stopForeground(true)\n' +
-      '                }'
     );
   }
 
   // Ghi đè vào đường dẫn gốc (app/src/main/...)
   writeFileSecure(file.path, fileContent);
 
-  // Ghi đè vào đường dẫn lồng nhau dự phòng (app/app/src/main/...)
+  // Nhân đôi quá trình: Ghi đè vào đường dẫn lồng nhau dự phòng (app/app/src/main/...)
   if (file.path.startsWith('app/')) {
     const nestedPath = file.path.replace('app/', 'app/app/');
     writeFileSecure(nestedPath, fileContent);
@@ -174,6 +160,7 @@ rootProject.name = "YTLiveStreamer"
 include(":app")
 `;
 
+settingsContent = settingsContent.replace(/include\(":app"\)/g, 'include(":app")'); // Giữ nguyên cấu trúc chuẩn
 writeFileSecure('settings.gradle.kts', settingsContent);
 writeFileSecure('app/settings.gradle.kts', settingsContent);
 
@@ -220,6 +207,10 @@ function scanAndFixAllFiles(dir: string) {
           return line;
         });
         content = updatedLines.join('\n');
+        
+        // Robot dự phòng tự động đổi lệnh dừng dịch vụ ngầm tương thích với Android cũ
+        content = content.replace(/stopForeground\(STOP_FOREGROUND_REMOVE\)/g, 'stopForeground(true)');
+        changed = true;
       }
 
       if (file === 'MainActivity.kt') {
