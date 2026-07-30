@@ -21,36 +21,30 @@ ANDROID_CODEBASE.forEach((file) => {
       'com.arthenica:ffmpeg-kit-full:6.0-2',
       'dev.ffmpegkit-maintained:ffmpeg-kit-free:6.0.1'
     );
+    
+    // Thêm cấu hình bắt buộc giải nén jniLibs để tránh lỗi dlopen RELRO Out of Memory trên một số dòng máy
+    fileContent = fileContent.replace(
+      'buildTypes {',
+      'packaging {\n' +
+      '        jniLibs {\n' +
+      '            useLegacyPackaging = true\n' +
+      '        }\n' +
+      '    }\n\n' +
+      '    buildTypes {'
+    );
   }
 
-  // Sửa lỗi thiếu icon và style theme bằng cách trỏ về hệ thống mặc định của Android
+  // Sửa lỗi thiếu icon và style theme bằng cách trỏ về hệ thống mặc định của Android và ép giải nén thư viện
   if (file.filename === 'AndroidManifest.xml') {
     fileContent = fileContent
+      .replace('<application', '<application android:extractNativeLibs="true"')
       .replace('@mipmap/ic_launcher', '@android:drawable/sym_def_app_icon')
       .replace('@mipmap/ic_launcher_round', '@android:drawable/sym_def_app_icon')
       .replace(/@style\/Theme\.YTLiveStreamer/g, '@android:style/Theme.DeviceDefault.NoActionBar');
   }
 
-  // Sửa lỗi văng app trên Android 11+ và tích hợp Bộ Chẩn Đoán Lỗi Tự Động trong MainActivity
+  // Sửa lỗi văng app trên Android 11+ (Tự động copy file vào thư mục Cache an toàn)
   if (file.filename.includes('MainActivity.kt')) {
-    // 1. Chèn UncaughtExceptionHandler vào onCreate để ghi lại lỗi sập app
-    const originalOnCreate = `    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContent {`;
-        
-    const newOnCreate = `    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
-            try {
-                val file = java.io.File(cacheDir, "crash_log.txt")
-                file.writeText(throwable.stackTraceToString())
-            } catch (e: Exception) {}
-            System.exit(1)
-        }
-        setContent {`;
-    fileContent = fileContent.replace(originalOnCreate, newOnCreate);
-
-    // 2. Chèn bộ hiển thị thông báo lỗi tự động (AlertDialog) vào giao diện
     const originalLauncher = `    val videoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
@@ -77,44 +71,6 @@ ANDROID_CODEBASE.forEach((file) => {
     }`;
 
     fileContent = fileContent.replace(originalLauncher, newLauncher);
-
-    // 3. Tích hợp Dialog đọc lỗi crash_log.txt
-    const originalScreenStart = `fun RtmpStreamerScreen() {
-    val context = LocalContext.current`;
-
-    const newScreenStart = `fun RtmpStreamerScreen() {
-    val context = LocalContext.current
-    var crashLog by remember { mutableStateOf<String?>(null) }
-    LaunchedEffect(Unit) {
-        val file = java.io.File(context.cacheDir, "crash_log.txt")
-        if (file.exists()) {
-            crashLog = file.readText()
-        }
-    }
-    if (crashLog != null) {
-        AlertDialog(
-            onDismissRequest = { crashLog = null },
-            title = { Text("Crash Log (Chi Tiết Lỗi Hệ Thống):", fontWeight = FontWeight.Bold, color = Color.Red) },
-            text = { 
-                Column(modifier = Modifier.height(350.dp).verticalScroll(rememberScrollState())) {
-                    Text(crashLog!!, fontSize = 9.sp, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace)
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = { 
-                        try { java.io.File(context.cacheDir, "crash_log.txt").delete() } catch(e: Exception){}
-                        crashLog = null 
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
-                ) {
-                    Text("XÓA LOG & ĐÓNG")
-                }
-            }
-        )
-    }`;
-
-    fileContent = fileContent.replace(originalScreenStart, newScreenStart);
     
     // Ghi hàm helper copyUriToCache vào rìa ngoài cùng cuối tệp để tránh làm lỗi ngoặc nhọn
     const helperFunction = `\n\nfun copyUriToCache(context: android.content.Context, uri: android.net.Uri): String? {
@@ -138,7 +94,7 @@ ANDROID_CODEBASE.forEach((file) => {
     fileContent = fileContent + helperFunction;
   }
 
-  // Sửa lỗi đường dẫn videoInput và lỗi chạy ngầm trên Android 11 trong RtmpStreamService.kt
+  // Sửa lỗi đường dẫn videoInput và lỗi tương thích chạy ngầm trên Android 11 trong RtmpStreamService.kt
   if (file.filename.includes('RtmpStreamService.kt')) {
     // 1. Đọc trực tiếp đường dẫn cache video từ MainActivity
     fileContent = fileContent.replace(
