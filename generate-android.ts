@@ -160,7 +160,6 @@ rootProject.name = "YTLiveStreamer"
 include(":app")
 `;
 
-settingsContent = settingsContent.replace(/include\(":app"\)/g, 'include(":app")'); // Giữ nguyên cấu trúc chuẩn
 writeFileSecure('settings.gradle.kts', settingsContent);
 writeFileSecure('app/settings.gradle.kts', settingsContent);
 
