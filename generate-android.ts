@@ -72,7 +72,7 @@ ANDROID_CODEBASE.forEach((file) => {
 
     fileContent = fileContent.replace(originalLauncher, newLauncher);
     
-    // Ghi hàm helper copyUriToCache vào rìa ngoài cùng cuối tệp để tránh làm lỗi ngoặc nhọn
+    // Ghi hàm helper copyUriToCache vào rìa ngoài cùng cuối tệp (Package-level function) để truy cập tự do
     const helperFunction = `\n\nfun copyUriToCache(context: android.content.Context, uri: android.net.Uri): String? {
     try {
         val inputStream = context.contentResolver.openInputStream(uri) ?: return null
@@ -190,22 +190,24 @@ rootProject.name = "YTLiveStreamer"
 include(":app")
 `;
 
+settingsContent = settingsContent.replace(/include\(":app"\)/g, 'include(":app")'); // Giữ nguyên cấu trúc chuẩn
 writeFileSecure('settings.gradle.kts', settingsContent);
 writeFileSecure('app/settings.gradle.kts', settingsContent);
 
-// 5. Tạo file gradle.properties kích hoạt AndroidX và cấp 3GB RAM tối ưu ở cả 2 cấp độ thư mục
+// 5. Tạo tệp gradle.properties kích hoạt AndroidX, cấp 3GB RAM và kích hoạt nén/giải nén thư viện hệ thống
 const gradlePropertiesContent = `android.useAndroidX=true
 org.gradle.jvmargs=-Xmx3072m -XX:MaxMetaspaceSize=512m
 org.gradle.daemon=false
 org.gradle.caching=false
 kotlin.incremental=false
+android.bundle.enableUncompressedCpuLibs=false
 `;
 
 writeFileSecure('gradle.properties', gradlePropertiesContent);
 writeFileSecure('app/gradle.properties', gradlePropertiesContent);
 
 
-// 6. HÀM ROBOT QUÉT VÀ SỬA TOÀN BỘ WORKSPACE (DỰ PHÒNG THÊM)
+// 6. HÀM ROBOT QUÉT VÀ SỬA TOÀN BỘ WORKSPACE (BẢO VỆ ĐỒNG BỘ CỜ GIẢI NÉN THƯ VIỆN)
 function scanAndFixAllFiles(dir: string) {
   const files = fs.readdirSync(dir);
   for (const file of files) {
@@ -237,7 +239,7 @@ function scanAndFixAllFiles(dir: string) {
         });
         content = updatedLines.join('\n');
         
-        // Robot dự phòng tự động đổi lệnh dừng dịch vụ ngầm tương thích với Android cũ
+        // Robot tự động đổi lệnh dừng dịch vụ ngầm tương thích với Android cũ
         content = content.replace(/stopForeground\(STOP_FOREGROUND_REMOVE\)/g, 'stopForeground(true)');
         changed = true;
       }
@@ -251,9 +253,11 @@ function scanAndFixAllFiles(dir: string) {
         }
       }
 
+      // ĐẢM BẢO GIỮ LẠI CỜ ÉP BUỘC GIẢI NÉN TRONG MANIFEST KHI ROBOT QUÉT QUA
       if (file === 'AndroidManifest.xml') {
-        if (content.includes('@mipmap/ic_launcher') || content.includes('@style/Theme.YTLiveStreamer')) {
+        if (content.includes('@mipmap/ic_launcher') || content.includes('@style/Theme.YTLiveStreamer') || !content.includes('android:extractNativeLibs="true"')) {
           content = content
+            .replace('<application', '<application android:extractNativeLibs="true"')
             .replace('@mipmap/ic_launcher', '@android:drawable/sym_def_app_icon')
             .replace('@mipmap/ic_launcher_round', '@android:drawable/sym_def_app_icon')
             .replace(/@style\/Theme\.YTLiveStreamer/g, '@android:style/Theme.DeviceDefault.NoActionBar');
