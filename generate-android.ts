@@ -31,8 +31,26 @@ ANDROID_CODEBASE.forEach((file) => {
       .replace(/@style\/Theme\.YTLiveStreamer/g, '@android:style/Theme.DeviceDefault.NoActionBar');
   }
 
-  // Sửa lỗi văng app trên Android 11+ (Tự động copy file vào thư mục Cache an toàn)
+  // Sửa lỗi văng app trên Android 11+ và tích hợp Bộ Chẩn Đoán Lỗi Tự Động trong MainActivity
   if (file.filename.includes('MainActivity.kt')) {
+    // 1. Chèn UncaughtExceptionHandler vào onCreate để ghi lại lỗi sập app
+    const originalOnCreate = `    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent {`;
+        
+    const newOnCreate = `    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+            try {
+                val file = java.io.File(cacheDir, "crash_log.txt")
+                file.writeText(throwable.stackTraceToString())
+            } catch (e: Exception) {}
+            System.exit(1)
+        }
+        setContent {`;
+    fileContent = fileContent.replace(originalOnCreate, newOnCreate);
+
+    // 2. Chèn bộ hiển thị thông báo lỗi tự động (AlertDialog) vào giao diện
     const originalLauncher = `    val videoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
@@ -59,6 +77,44 @@ ANDROID_CODEBASE.forEach((file) => {
     }`;
 
     fileContent = fileContent.replace(originalLauncher, newLauncher);
+
+    // 3. Tích hợp Dialog đọc lỗi crash_log.txt
+    const originalScreenStart = `fun RtmpStreamerScreen() {
+    val context = LocalContext.current`;
+
+    const newScreenStart = `fun RtmpStreamerScreen() {
+    val context = LocalContext.current
+    var crashLog by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(Unit) {
+        val file = java.io.File(context.cacheDir, "crash_log.txt")
+        if (file.exists()) {
+            crashLog = file.readText()
+        }
+    }
+    if (crashLog != null) {
+        AlertDialog(
+            onDismissRequest = { crashLog = null },
+            title = { Text("Crash Log (Chi Tiết Lỗi Hệ Thống):", fontWeight = FontWeight.Bold, color = Color.Red) },
+            text = { 
+                Column(modifier = Modifier.height(350.dp).verticalScroll(rememberScrollState())) {
+                    Text(crashLog!!, fontSize = 9.sp, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace)
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = { 
+                        try { java.io.File(context.cacheDir, "crash_log.txt").delete() } catch(e: Exception){}
+                        crashLog = null 
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                ) {
+                    Text("XÓA LOG & ĐÓNG")
+                }
+            }
+        )
+    }`;
+
+    fileContent = fileContent.replace(originalScreenStart, newScreenStart);
     
     // Ghi hàm helper copyUriToCache vào rìa ngoài cùng cuối tệp để tránh làm lỗi ngoặc nhọn
     const helperFunction = `\n\nfun copyUriToCache(context: android.content.Context, uri: android.net.Uri): String? {
@@ -82,7 +138,7 @@ ANDROID_CODEBASE.forEach((file) => {
     fileContent = fileContent + helperFunction;
   }
 
-  // Sửa lỗi đường dẫn videoInput và lỗi tương thích chạy ngầm trên Android 11 trong RtmpStreamService.kt
+  // Sửa lỗi đường dẫn videoInput và lỗi chạy ngầm trên Android 11 trong RtmpStreamService.kt
   if (file.filename.includes('RtmpStreamService.kt')) {
     // 1. Đọc trực tiếp đường dẫn cache video từ MainActivity
     fileContent = fileContent.replace(
@@ -93,7 +149,25 @@ ANDROID_CODEBASE.forEach((file) => {
     // 2. Thay thế lệnh dừng chạy ngầm bằng hàm tương thích với mọi Android cũ
     fileContent = fileContent.replace(/stopForeground\(STOP_FOREGROUND_REMOVE\)/g, 'stopForeground(true)');
 
-    // 3. Tối ưu hóa lệnh khởi tạo dịch vụ chạy ngầm để tương thích với targetSdk 34
+    // 3. Tối ưu hóa lệnh khởi tạo dịch vụ chạy ngầm và cài UncaughtExceptionHandler cho service
+    const originalServiceOnCreate = `    override fun onCreate() {
+        super.onCreate()
+        createNotificationChannel()
+    }`;
+
+    const newServiceOnCreate = `    override fun onCreate() {
+        super.onCreate()
+        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+            try {
+                val file = java.io.File(cacheDir, "crash_log.txt")
+                file.writeText(throwable.stackTraceToString())
+            } catch (e: Exception) {}
+            System.exit(1)
+        }
+        createNotificationChannel()
+    }`;
+    fileContent = fileContent.replace(originalServiceOnCreate, newServiceOnCreate);
+
     fileContent = fileContent.replace(
       'startForeground(NOTIFICATION_ID, notification)',
       'if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {\n' +
