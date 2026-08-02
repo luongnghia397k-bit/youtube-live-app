@@ -51,7 +51,7 @@
         }
         function updateBPM(val) { bpm = parseInt(val); document.getElementById('bpm-val').textContent = `${bpm} BPM`; }
         function updateRain(val) { document.getElementById('rain-val').textContent = `${val}%`; if (rainGain) rainGain.gain.setValueAtTime((parseFloat(val)/100) * 0.15, audioCtx.currentTime); }
-        function updateBowl(val) { document.getElementById('bowl-val').textContent = `${val}%`; if (bowlGain) bowlGain.gain.setValueAtTime((parseFloat(val)/100) * 0.08, audioCtx.currentTime); }
+        function updateBowl(val) { document.getElementById('bowl-val').textContent = `${val}%`; if (bowlGain) bowlGain.gain.setValueAtTime((parseFloat(val)/100) * 0.22, audioCtx.currentTime); }
         function createNoiseBuffer() {
             const size = 2 * audioCtx.sampleRate, buffer = audioCtx.createBuffer(1, size, audioCtx.sampleRate), out = buffer.getChannelData(0);
             for (let i = 0; i < size; i++) out[i] = Math.random() * 2 - 1; return buffer;
@@ -59,11 +59,23 @@
         function initAudio() {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             masterGain = audioCtx.createGain(); masterGain.gain.setValueAtTime(1.0, audioCtx.currentTime);
+            
+            // Thiết lập bộ nén âm thanh nén (Dynamics Compressor) giúp khuếch đại âm lượng cực lớn mà không rè loa
+            const compressor = audioCtx.createDynamicsCompressor();
+            compressor.threshold.setValueAtTime(-15, audioCtx.currentTime);
+            compressor.knee.setValueAtTime(30, audioCtx.currentTime);
+            compressor.ratio.setValueAtTime(12, audioCtx.currentTime);
+            compressor.attack.setValueAtTime(0.003, audioCtx.currentTime);
+            compressor.release.setValueAtTime(0.25, audioCtx.currentTime);
+
             if (audioCtx.createMediaStreamDestination) { recordDestination = audioCtx.createMediaStreamDestination(); masterGain.connect(recordDestination); }
-            masterGain.connect(audioCtx.destination);
+            masterGain.connect(compressor);
+            compressor.connect(audioCtx.destination);
+
             rainGain = audioCtx.createGain(); const rainFilter = audioCtx.createBiquadFilter(); rainFilter.type = "lowpass"; rainFilter.frequency.setValueAtTime(800, audioCtx.currentTime);
             rainSource = audioCtx.createBufferSource(); rainSource.buffer = createNoiseBuffer(); rainSource.loop = true;
             rainSource.connect(rainFilter); rainFilter.connect(rainGain); rainGain.connect(masterGain); updateRain(document.getElementById('rain-slider').value); rainSource.start(0);
+            
             bowlGain = audioCtx.createGain(); const bowlFilter = audioCtx.createBiquadFilter(); bowlFilter.type = "bandpass"; bowlFilter.frequency.setValueAtTime(1200, audioCtx.currentTime); bowlFilter.Q.setValueAtTime(1.5, audioCtx.currentTime);
             bowlSource = audioCtx.createBufferSource(); bowlSource.buffer = createNoiseBuffer(); bowlSource.loop = true;
             bowlSource.connect(bowlFilter); bowlFilter.connect(bowlGain); bowlGain.connect(masterGain); updateBowl(document.getElementById('bowl-slider').value); bowlSource.start(0);
@@ -71,14 +83,14 @@
         function playMo(time) {
             const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
             osc.type = "triangle"; osc.frequency.setValueAtTime(560, time); osc.frequency.exponentialRampToValueAtTime(280, time + 0.05);
-            gain.gain.setValueAtTime(0.32, time); gain.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
+            gain.gain.setValueAtTime(0.65, time); gain.gain.exponentialRampToValueAtTime(0.001, time + 0.05); // Boost từ 0.32 lên 0.65
             osc.connect(gain); gain.connect(masterGain); osc.start(time); osc.stop(time + 0.05);
         }
         function playChuong(time) {
             [293.66, 295.16, 587.33].forEach((freq, i) => {
                 const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
                 osc.type = "sine"; osc.frequency.setValueAtTime(freq, time);
-                gain.gain.setValueAtTime(0.0, time); gain.gain.linearRampToValueAtTime(i === 2 ? 0.02 : 0.05, time + 0.06);
+                gain.gain.setValueAtTime(0.0, time); gain.gain.linearRampToValueAtTime(i === 2 ? 0.08 : 0.18, time + 0.06); // Boost từ 0.05 lên 0.18
                 gain.gain.exponentialRampToValueAtTime(0.001, time + 6.0);
                 osc.connect(gain); gain.connect(masterGain); osc.start(time); osc.stop(time + 6.1);
             });
@@ -87,14 +99,15 @@
             const osc = audioCtx.createOscillator(), gain = audioCtx.createGain(), filter = audioCtx.createBiquadFilter();
             osc.type = "sine"; osc.frequency.setValueAtTime(freq * 3, time);
             filter.type = "lowpass"; filter.frequency.setValueAtTime(400, time);
-            gain.gain.setValueAtTime(0.0, time); gain.gain.linearRampToValueAtTime(0.07, time + 0.15); gain.gain.exponentialRampToValueAtTime(0.001, time + 0.9);
+            gain.gain.setValueAtTime(0.0, time); gain.gain.linearRampToValueAtTime(0.18, time + 0.15); // Boost từ 0.07 lên 0.18
+            gain.gain.exponentialRampToValueAtTime(0.001, time + 0.9);
             osc.connect(filter); filter.connect(gain); gain.connect(masterGain); osc.start(time); osc.stop(time + 1.0);
         }
         function playBass(freq, time) {
             const osc = audioCtx.createOscillator(), gain = audioCtx.createGain(), filter = audioCtx.createBiquadFilter();
             osc.type = "sine"; osc.frequency.setValueAtTime(freq / 4, time);
             filter.type = "lowpass"; filter.frequency.setValueAtTime(120, time);
-            gain.gain.setValueAtTime(0.0, time); gain.gain.linearRampToValueAtTime(0.24, time + 0.1); gain.gain.exponentialRampToValueAtTime(0.001, time + 2.8);
+            gain.gain.setValueAtTime(0.0, time); gain.gain.linearRampToValueAtTime(0.45, time + 0.1); gain.gain.exponentialRampToValueAtTime(0.001, time + 2.8); // Boost từ 0.24 lên 0.45
             osc.connect(filter); filter.connect(gain); gain.connect(masterGain); osc.start(time); osc.stop(time + 3.0);
         }
         function scheduler() {
