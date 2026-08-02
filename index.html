@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Music Generator</title>
+    <title>AI Lofi Procedural Beatmaker</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons CDN -->
@@ -25,120 +25,126 @@
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans selection:bg-emerald-900 selection:text-emerald-100">
 
-    <!-- Navbar Header -->
-    <header className="sticky top-0 z-40 bg-slate-950/80 backdrop-blur-md border-b border-slate-800/80 px-4 py-3.5">
+    <!-- Header -->
+    <header class="sticky top-0 z-40 bg-slate-950/80 backdrop-blur-md border-b border-slate-800/80 px-4 py-3.5">
         <div class="max-w-xl mx-auto flex items-center justify-between">
             <div class="flex items-center gap-3">
-                <div class="p-2.5 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white shadow-lg shadow-emerald-600/30">
+                <div class="p-2.5 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-500 text-white shadow-lg shadow-purple-600/30">
                     <i data-lucide="music" class="w-5 h-5 animate-pulse"></i>
                 </div>
                 <div>
-                    <h1 class="text-sm font-bold text-white tracking-tight">AI Music Generator</h1>
-                    <p class="text-[10px] text-slate-400">Meta MusicGen small 300M Model</p>
+                    <h1 class="text-sm font-bold text-white tracking-tight">AI Lofi Beatmaker</h1>
+                    <p class="text-[10px] text-slate-400">Procedural Web Audio Synthesizer</p>
                 </div>
             </div>
-            <a href="https://huggingface.co/settings/tokens" target="_blank" class="text-[10px] text-emerald-400 hover:underline font-semibold flex items-center gap-1">
-                Lấy Token miễn phí <i data-lucide="external-link" class="w-3 h-3"></i>
-            </a>
+            <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                100% Offline
+            </span>
         </div>
     </header>
 
-    <!-- Main Body App -->
+    <!-- Main Body -->
     <main class="flex-1 max-w-xl w-full mx-auto p-4 space-y-4 overflow-y-auto">
         
-        <!-- API Token Card -->
-        <div class="rounded-2xl bg-slate-900 border border-slate-800 p-4 space-y-2.5 shadow-lg">
-            <div class="flex items-center gap-2 font-bold text-slate-200 text-xs">
-                <i data-lucide="key" class="w-4 h-4 text-emerald-400"></i>
-                Hugging Face API Token (Tùy chọn)
-            </div>
-            <p class="text-[10px] text-slate-400 leading-relaxed">
-                Nhập Token cá nhân của bạn để tạo nhạc ổn định hơn và tránh bị giới hạn lượt tạo (Hugging Face cấp miễn phí trong 10 giây).
-            </p>
-            <input 
-                type="password" 
-                id="token" 
-                placeholder="hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-                class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 font-mono text-xs focus:outline-none focus:border-emerald-500 transition-colors"
-            />
-        </div>
-
-        <!-- Prompt Input Card -->
-        <div class="rounded-2xl bg-slate-900 border border-slate-800 p-4 space-y-3.5 shadow-lg">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2 font-bold text-slate-200 text-xs">
-                    <i data-lucide="sparkles" class="w-4 h-4 text-amber-400"></i>
-                    Nhập ý tưởng nhạc (Bằng tiếng Anh)
-                </div>
-            </div>
-
-            <textarea 
-                id="prompt" 
-                rows="3"
-                placeholder="Ví dụ: lofi slow bpm electro chill with organic samples, relaxing melody for sleep..."
-                class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 text-xs focus:outline-none focus:border-emerald-500 transition-colors resize-none"
-            ></textarea>
-
-            <!-- Presets Dropdown -->
-            <div class="space-y-1.5">
-                <label class="text-[10px] text-slate-400 font-medium">Chọn nhanh thể loại mẫu:</label>
-                <div class="grid grid-cols-2 gap-1.5">
-                    <button onclick="applyPreset('lofi')" class="p-2 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 text-left text-[10px] text-slate-300">
-                        <div class="font-bold text-emerald-400">Lofi Chill</div>
-                        <div class="text-slate-500 truncate">Slow bpm relaxing beats</div>
-                    </button>
-                    <button onclick="applyPreset('ambient')" class="p-2 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 text-left text-[10px] text-slate-300">
-                        <div class="font-bold text-blue-400">Ambient Space</div>
-                        <div class="text-slate-500 truncate">Deep relaxing space loop</div>
-                    </button>
-                    <button onclick="applyPreset('jazz')" class="p-2 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 text-left text-[10px] text-slate-300">
-                        <div class="font-bold text-amber-400">Smooth Jazz</div>
-                        <div class="text-slate-500 truncate">Saxophone & piano chords</div>
-                    </button>
-                    <button onclick="applyPreset('synthwave')" class="p-2 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 text-left text-[10px] text-slate-300">
-                        <div class="font-bold text-purple-400">Cyberpunk Retro</div>
-                        <div class="text-slate-500 truncate">80s heavy synthwave drums</div>
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Action Button -->
-        <button 
-            id="generate-btn"
-            onclick="generateMusic()"
-            class="w-full h-12 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm tracking-wide flex items-center justify-center gap-2 shadow-xl shadow-emerald-600/20 active:scale-[0.99] transition-all"
-        >
-            <i data-lucide="play" class="w-5 h-5 fill-white"></i>
-            SÁNG TÁC NHẠC BẰNG AI
-        </button>
-
-        <!-- Player & Logs Dashboard -->
-        <div class="rounded-2xl bg-slate-900 border border-slate-800 p-4 space-y-3 shadow-lg">
+        <!-- Synthesizer Controls -->
+        <div class="rounded-2xl bg-slate-900 border border-slate-800 p-4 space-y-4 shadow-lg">
             <div class="flex items-center justify-between border-b border-slate-800 pb-2">
                 <div class="flex items-center gap-2 font-bold text-slate-200 text-xs">
-                    <i data-lucide="activity" class="w-4 h-4 text-emerald-400"></i>
-                    Bản nhạc & Tiến trình xử lý
+                    <i data-lucide="sliders" class="w-4 h-4 text-purple-400"></i>
+                    Bảng Điều Khiển Giai Điệu & Nhịp Điệu
                 </div>
-                <span id="status-badge" class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-slate-800 text-slate-400 border border-slate-700 uppercase">OFFLINE</span>
             </div>
 
-            <!-- Custom HTML5 Audio Player -->
-            <audio id="audio-player" controls class="w-full hidden rounded-xl bg-slate-950 border border-slate-800 p-1"></audio>
+            <!-- BPM Control -->
+            <div class="space-y-1">
+                <div class="flex items-center justify-between text-[11px] text-slate-400">
+                    <span>Tốc độ nhịp (BPM):</span>
+                    <span id="bpm-val" class="font-mono font-bold text-purple-400">75 BPM</span>
+                </div>
+                <input 
+                    type="range" 
+                    id="bpm-slider" 
+                    min="60" 
+                    max="95" 
+                    value="75"
+                    oninput="updateBPM(this.value)"
+                    class="w-full accent-purple-500 bg-slate-950 rounded-lg appearance-none h-1.5 cursor-pointer"
+                />
+            </div>
 
-            <!-- Download Button -->
+            <!-- Ambient Sound Mixers -->
+            <div class="space-y-3 pt-1">
+                <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Âm thanh nền (Ambient Mixer)</div>
+                
+                <!-- Rain Volume -->
+                <div class="space-y-1">
+                    <div class="flex items-center justify-between text-[10px] text-slate-300">
+                        <span class="flex items-center gap-1"><i data-lucide="cloud-rain" class="w-3.5 h-3.5 text-blue-400"></i> Tiếng mưa rơi</span>
+                        <span id="rain-val" class="font-mono text-slate-400">50%</span>
+                    </div>
+                    <input type="range" id="rain-slider" min="0" max="100" value="50" oninput="updateRain(this.value)" class="w-full accent-blue-500 bg-slate-950 rounded-lg appearance-none h-1 cursor-pointer" />
+                </div>
+
+                <!-- Vinyl Crackle Volume -->
+                <div class="space-y-1">
+                    <div class="flex items-center justify-between text-[10px] text-slate-300">
+                        <span class="flex items-center gap-1"><i data-lucide="disc" class="w-3.5 h-3.5 text-amber-500 animate-spin-slow"></i> Tiếng rè đĩa than cổ điển</span>
+                        <span id="vinyl-val" class="font-mono text-slate-400">40%</span>
+                    </div>
+                    <input type="range" id="vinyl-slider" min="0" max="100" value="40" oninput="updateVinyl(this.value)" class="w-full accent-amber-500 bg-slate-950 rounded-lg appearance-none h-1 cursor-pointer" />
+                </div>
+            </div>
+        </div>
+
+        <!-- Master Player Controls -->
+        <div class="grid grid-cols-2 gap-3">
+            <button 
+                id="play-btn"
+                onclick="togglePlayback()"
+                class="h-12 rounded-2xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs tracking-wide flex items-center justify-center gap-2 shadow-xl shadow-purple-600/20 active:scale-[0.99] transition-all"
+            >
+                <i id="play-icon" data-lucide="play" class="w-4 h-4 fill-white"></i>
+                <span id="play-text">PHÁT NHẠC LOFI</span>
+            </button>
+
+            <button 
+                id="record-btn"
+                onclick="toggleRecording()"
+                disabled
+                class="h-12 rounded-2xl bg-slate-800 border border-slate-700 disabled:opacity-50 text-slate-400 font-bold text-xs tracking-wide flex items-center justify-center gap-2 transition-all"
+            >
+                <i id="record-icon" data-lucide="circle" class="w-4 h-4 text-red-500"></i>
+                <span id="record-text">BẮT ĐẦU GHI ÂM</span>
+            </button>
+        </div>
+
+        <!-- Download Card (Initially Hidden) -->
+        <div id="download-card" class="hidden rounded-2xl bg-slate-900 border border-emerald-800/80 p-4 space-y-3 shadow-lg">
+            <div class="flex items-center gap-2 font-bold text-emerald-400 text-xs">
+                <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+                Ghi Âm Hoàn Tất! Bản nhạc lofi độc quyền của bạn đã sẵn sàng
+            </div>
             <a 
-                id="download-btn" 
-                href="#" 
-                class="hidden w-full h-10 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs tracking-wide flex items-center justify-center gap-2 shadow-lg transition-all"
+                id="download-btn"
+                href="#"
+                class="w-full h-11 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs tracking-wide flex items-center justify-center gap-2 shadow-lg transition-all"
             >
                 <i data-lucide="download" class="w-4 h-4"></i>
-                TẢI NHẠC VỀ MÁY (.WAV)
+                TẢI BẢN NHẠC VỀ ĐIỆN THOẠI (.WAV)
             </a>
+        </div>
 
-            <!-- Terminal Logger Console -->
-            <div id="log-box" class="rounded-xl bg-slate-950 border border-slate-800 p-2.5 font-mono text-[9px] space-y-1 h-32 overflow-y-auto">
-                <div class="text-slate-500">[00:00:00] Sẵn sàng sáng tác. Chọn thể loại mẫu hoặc nhập mô tả của bạn.</div>
+        <!-- Status Logs -->
+        <div class="rounded-2xl bg-slate-900 border border-slate-800 p-4 space-y-2 shadow-lg">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                <div class="flex items-center gap-2 font-bold text-slate-200 text-xs">
+                    <i data-lucide="terminal" class="w-4 h-4 text-purple-400"></i>
+                    Nhật ký bộ máy phát nhạc (Procedural Engine)
+                </div>
+                <span id="status-badge" class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-slate-800 text-slate-400 border border-slate-700">OFFLINE</span>
+            </div>
+            <div id="log-box" class="rounded-xl bg-slate-950 border border-slate-800 p-2.5 font-mono text-[9px] space-y-1 h-28 overflow-y-auto">
+                <div class="text-slate-500">[00:00:00] Bộ máy phát nhạc sẵn sàng. Bấm PHÁT NHẠC LOFI để AI bắt đầu phối khí trực tiếp.</div>
             </div>
         </div>
 
@@ -146,128 +152,310 @@
 
     <!-- Footer -->
     <footer class="border-t border-slate-800/80 py-4 px-4 text-center text-[10px] text-slate-500 bg-slate-950">
-        <p>Powered by Meta MusicGen & Hugging Face Serverless Inference API.</p>
+        <p>Built with Web Audio API. 100% client-side sound synthesis.</p>
     </footer>
 
-    <!-- JavaScript Logic -->
+    <!-- Web Audio Engine Script -->
     <script>
-        // Initialize Lucide Icons
         lucide.createIcons();
 
-        const presets = {
-            lofi: "lofi slow bpm electro chill with organic samples, relaxing piano, study music, cozy background",
-            ambient: "synth ambient radio, deep space music to sleep, soothing background loop, cosmic relaxing soundscape",
-            jazz: "smooth jazz piece, soft saxophone melodies, gentle piano chords, relaxed double bass, cafe background",
-            synthwave: "cyberpunk stream countdown, neon retro synthwave beat, energetic 80s drums, heavy synthesizer"
-        };
+        let audioCtx = null;
+        let isPlaying = false;
+        let isRecording = false;
+        let mediaRecorder = null;
+        let recordedChunks = [];
+        let recordDestination = null;
 
-        function applyPreset(type) {
-            document.getElementById('prompt').value = presets[type];
-            addLog("info", `Đã chọn cấu trúc thể loại: ${type.toUpperCase()}`);
-        }
+        // Audio Nodes
+        let masterGain = null;
+        let rainGain = null;
+        let vinylGain = null;
+        let rainSource = null;
+        let vinylSource = null;
+
+        // Sequencer variables
+        let schedulerTimer = null;
+        let bpm = 75;
+        let currentBeat = 0;
+        let nextNoteTime = 0.0;
+        const scheduleAheadTime = 0.1;
+        const lookahead = 25.0;
+
+        // Lofi Chord Progression (Cmaj7 - Am7 - Dm7 - G7)
+        const chords = [
+            [261.63, 329.63, 392.00, 493.88], // Cmaj7
+            [220.00, 261.63, 329.63, 392.00], // Am7
+            [293.66, 349.23, 440.00, 523.25], // Dm7
+            [196.00, 246.94, 293.66, 349.23]  // G7
+        ];
+        let currentChordIndex = 0;
 
         function addLog(level, message) {
             const logBox = document.getElementById('log-box');
             const timestamp = new Date().toLocaleTimeString();
-            
             let colorClass = "text-slate-300";
-            if (level === "error") colorClass = "text-red-400 font-semibold";
             if (level === "success") colorClass = "text-emerald-400 font-semibold";
-            if (level === "info") colorClass = "text-blue-300";
+            if (level === "info") colorClass = "text-purple-300";
+            if (level === "warn") colorClass = "text-amber-400";
 
             const entry = document.createElement('div');
             entry.className = "flex gap-2 leading-relaxed";
             entry.innerHTML = `<span class="text-slate-500 shrink-0">[${timestamp}]</span><span class="${colorClass}">${message}</span>`;
-            
             logBox.appendChild(entry);
             logBox.scrollTop = logBox.scrollHeight;
         }
 
-        function setLoading(isLoading) {
-            const generateBtn = document.getElementById('generate-btn');
-            const statusBadge = document.getElementById('status-badge');
-            
-            if (isLoading) {
-                generateBtn.disabled = true;
-                generateBtn.classList.add('opacity-50');
-                generateBtn.innerHTML = `<i data-lucide="loader" class="w-5 h-5 animate-spin"></i> ĐANG SÁNG TÁC...`;
-                statusBadge.textContent = "PROCESSING";
-                statusBadge.className = "px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30 animate-pulse";
-            } else {
-                generateBtn.disabled = false;
-                generateBtn.classList.remove('opacity-50');
-                generateBtn.innerHTML = `<i data-lucide="play" class="w-5 h-5 fill-white"></i> SÁNG TÁC NHẠC BẰNG AI`;
-                statusBadge.textContent = "LIVE";
-                statusBadge.className = "px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30";
-            }
-            lucide.createIcons();
+        function updateBPM(val) {
+            bpm = parseInt(val);
+            document.getElementById('bpm-val').textContent = `${bpm} BPM`;
         }
 
-        async function generateMusic() {
-            const promptInput = document.getElementById('prompt');
-            const tokenInput = document.getElementById('token');
-            const audioPlayer = document.getElementById('audio-player');
-            const downloadBtn = document.getElementById('download-btn');
+        function updateRain(val) {
+            const gainVal = parseFloat(val) / 100;
+            document.getElementById('rain-val').textContent = `${val}%`;
+            if (rainGain) rainGain.gain.setValueAtTime(gainVal * 0.15, audioCtx.currentTime);
+        }
+
+        function updateVinyl(val) {
+            const gainVal = parseFloat(val) / 100;
+            document.getElementById('vinyl-val').textContent = `${val}%`;
+            if (vinylGain) vinylGain.gain.setValueAtTime(gainVal * 0.08, audioCtx.currentTime);
+        }
+
+        function createNoiseBuffer() {
+            const bufferSize = 2 * audioCtx.sampleRate;
+            const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const output = noiseBuffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                output[i] = Math.random() * 2 - 1;
+            }
+            return noiseBuffer;
+        }
+
+        function initAudio() {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            masterGain = audioCtx.createGain();
+            masterGain.gain.setValueAtTime(1.0, audioCtx.currentTime);
+
+            // Setup recording destination
+            if (audioCtx.createMediaStreamDestination) {
+                recordDestination = audioCtx.createMediaStreamDestination();
+                masterGain.connect(recordDestination);
+            }
+            masterGain.connect(audioCtx.destination);
+
+            // Initialize Rain
+            rainGain = audioCtx.createGain();
+            const rainFilter = audioCtx.createBiquadFilter();
+            rainFilter.type = "lowpass";
+            rainFilter.frequency.setValueAtTime(800, audioCtx.currentTime);
             
-            const prompt = promptInput.value.trim();
-            const token = tokenInput.value.trim();
+            rainSource = audioCtx.createBufferSource();
+            rainSource.buffer = createNoiseBuffer();
+            rainSource.loop = true;
             
-            if (!prompt) {
-                alert("Vui lòng nhập mô tả hoặc chọn thể loại nhạc!");
-                return;
+            rainSource.connect(rainFilter);
+            rainFilter.connect(rainGain);
+            rainGain.connect(masterGain);
+            updateRain(document.getElementById('rain-slider').value);
+            rainSource.start(0);
+
+            // Initialize Vinyl Crackle
+            vinylGain = audioCtx.createGain();
+            const vinylFilter = audioCtx.createBiquadFilter();
+            vinylFilter.type = "bandpass";
+            vinylFilter.frequency.setValueAtTime(1200, audioCtx.currentTime);
+            vinylFilter.Q.setValueAtTime(1.5, audioCtx.currentTime);
+
+            vinylSource = audioCtx.createBufferSource();
+            vinylSource.buffer = createNoiseBuffer();
+            vinylSource.loop = true;
+
+            vinylSource.connect(vinylFilter);
+            vinylFilter.connect(vinylGain);
+            vinylGain.connect(masterGain);
+            updateVinyl(document.getElementById('vinyl-slider').value);
+            vinylSource.start(0);
+
+            // Start Vinyl Crackle random pops
+            setInterval(() => {
+                if (!isPlaying || !audioCtx) return;
+                if (Math.random() > 0.45) return;
+                playVinylPop();
+            }, 600);
+        }
+
+        function playVinylPop() {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            const filter = audioCtx.createBiquadFilter();
+            
+            filter.type = "highpass";
+            filter.frequency.setValueAtTime(3200, audioCtx.currentTime);
+            
+            osc.type = "triangle";
+            osc.frequency.setValueAtTime(Math.random() * 800 + 400, audioCtx.currentTime);
+            
+            gain.gain.setValueAtTime(Math.random() * 0.04 + 0.01, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.03);
+            
+            osc.connect(filter);
+            filter.connect(gain);
+            gain.connect(masterGain);
+            
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.03);
+        }
+
+        function playKick(time) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            
+            osc.frequency.setValueAtTime(140, time);
+            osc.frequency.exponentialRampToValueAtTime(0.01, time + 0.18);
+            
+            gain.gain.setValueAtTime(0.6, time);
+            gain.gain.exponentialRampToValueAtTime(0.001, time + 0.18);
+            
+            osc.connect(gain);
+            gain.connect(masterGain);
+            
+            osc.start(time);
+            osc.stop(time + 0.18);
+        }
+
+        function playHiHat(time) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            const filter = audioCtx.createBiquadFilter();
+            
+            filter.type = "highpass";
+            filter.frequency.setValueAtTime(8000, time);
+            
+            osc.type = "square";
+            osc.frequency.setValueAtTime(12000, time);
+            
+            gain.gain.setValueAtTime(0.06, time);
+            gain.gain.exponentialRampToValueAtTime(0.001, time + 0.04);
+            
+            osc.connect(filter);
+            filter.connect(gain);
+            gain.connect(masterGain);
+            
+            osc.start(time);
+            osc.stop(time + 0.04);
+        }
+
+        function playSnare(time) {
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = createNoiseBuffer();
+            const filter = audioCtx.createBiquadFilter();
+            const gain = audioCtx.createGain();
+            
+            filter.type = "bandpass";
+            filter.frequency.setValueAtTime(1000, time);
+            filter.Q.setValueAtTime(1.8, time);
+            
+            gain.gain.setValueAtTime(0.18, time);
+            gain.gain.exponentialRampToValueAtTime(0.001, time + 0.22);
+            
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(masterGain);
+            
+            noise.start(time);
+            noise.stop(time + 0.22);
+        }
+
+        function playChord(notes, time) {
+            // LFO to simulate warm tape warble (vibrato)
+            const lfo = audioCtx.createOscillator();
+            const lfoGain = audioCtx.createGain();
+            lfo.frequency.value = 4.2; // 4.2 Hz tape wobble
+            lfoGain.gain.value = 3.5; // wobble depth
+            
+            lfo.connect(lfoGain);
+            lfo.start(time);
+            lfo.stop(time + 3.2);
+            
+            notes.forEach(freq => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                const filter = audioCtx.createBiquadFilter();
+                
+                osc.type = "triangle";
+                osc.frequency.value = freq;
+                lfoGain.connect(osc.frequency);
+                
+                filter.type = "lowpass";
+                filter.frequency.setValueAtTime(550, time);
+                filter.frequency.exponentialRampToValueAtTime(120, time + 2.8);
+                
+                gain.gain.setValueAtTime(0.0, time);
+                gain.gain.linearRampToValueAtTime(0.11, time + 0.12); // Soft warm attack
+                gain.gain.exponentialRampToValueAtTime(0.001, time + 3.0); // Long decay
+                
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(masterGain);
+                
+                osc.start(time);
+                osc.stop(time + 3.2);
+            });
+        }
+
+        function scheduleNote(beatPattern, time) {
+            // Kick on 0, 8, 11
+            if (beatPattern === 0 || beatPattern === 8 || beatPattern === 11) {
+                playKick(time);
             }
             
-            setLoading(true);
-            addLog("info", "Đang kết nối tới mô hình Meta MusicGen...");
-            addLog("info", `Yêu cầu sáng tác: "${prompt}"`);
-            
-            const headers = {
-                "Content-Type": "application/json"
-            };
-            if (token) {
-                headers["Authorization"] = `Bearer ${token}`;
-                addLog("info", "Đang sử dụng mã xác thực API Token của bạn.");
-            } else {
-                addLog("warn", "Không dùng Token. Sử dụng đường truyền miễn phí có sẵn (có thể bị giới hạn tốc độ).");
+            // Snare on 4, 12
+            if (beatPattern === 4 || beatPattern === 12) {
+                playSnare(time);
             }
             
-            try {
-                const response = await fetch(
-                    "https://corsproxy.io/?https://api-inference.huggingface.co/models/facebook/musicgen-small",
-                    {
-                        method: "POST",
-                        headers: headers,
-                        body: JSON.stringify({ inputs: prompt })
-                    }
-                );
-                
-                if (!response.ok) {
-                    const errText = await response.text();
-                    throw new Error(`Máy chủ AI báo lỗi (${response.status}): ${errText}`);
-                }
-                
-                addLog("info", "Sáng tác thành công! Đang chuyển đổi tệp âm thanh...");
-                const blob = await response.blob();
-                const audioUrl = URL.createObjectURL(blob);
-                
-                // Load vào trình phát nhạc
-                audioPlayer.src = audioUrl;
-                audioPlayer.classList.remove('hidden');
-                
-                // Thiết lập nút tải về
-                downloadBtn.href = audioUrl;
-                downloadBtn.download = `ai-music-${Date.now()}.wav`;
-                downloadBtn.classList.remove('hidden');
-                
-                addLog("success", "Sáng tác hoàn tất! Bạn có thể nhấn nút Play để nghe hoặc bấm Tải về.");
-            } catch (error) {
-                console.error(error);
-                addLog("error", `Thất bại: ${error.message}`);
-                alert("Biên dịch nhạc thất bại! Bạn hãy thử đăng ký Token miễn phí điền vào để tăng độ ổn định nhé.");
-            } finally {
-                setLoading(false);
+            // Hi-hat on every even step + some syncopations
+            if (beatPattern % 2 === 0 || beatPattern === 5 || beatPattern === 13) {
+                playHiHat(time);
+            }
+            
+            // Play relaxing chord on beat 0 (every 16 steps)
+            if (beatPattern === 0) {
+                playChord(chords[currentChordIndex], time);
+                addLog("info", `=== AI phối khí hợp âm lofi thứ ${currentChordIndex + 1} ===`);
+                currentChordIndex = (currentChordIndex + 1) % chords.length;
             }
         }
-    </script>
-</body>
-  </html>
+
+        function scheduler() {
+            while (nextNoteTime < audioCtx.currentTime + scheduleAheadTime) {
+                scheduleNote(currentBeat, nextNoteTime);
+                const secondsPerBeat = 60.0 / bpm;
+                nextNoteTime += 0.25 * secondsPerBeat; // 16th notes
+                currentBeat = (currentBeat + 1) % 16;
+            }
+            schedulerTimer = setTimeout(scheduler, lookahead);
+        }
+
+        function togglePlayback() {
+            const playBtn = document.getElementById('play-btn');
+            const playText = document.getElementById('play-text');
+            const statusBadge = document.getElementById('status-badge');
+            const recordBtn = document.getElementById('record-btn');
+
+            if (!isPlaying) {
+                if (!audioCtx) initAudio();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                
+                isPlaying = true;
+                nextNoteTime = audioCtx.currentTime + 0.05;
+                currentBeat = 0;
+                scheduler();
+
+                playText.textContent = "TẠM DỪNG";
+                playBtn.className = "h-12 rounded-2xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs tracking-wide flex items-center justify-center gap-2 shadow-xl active:scale-[0.99] transition-all";
+                document.getElementById('play-icon').setAttribute('data-lucide', 'pause');
+                
+                statusBadge.textContent = "LIVE";
+                statusBadge.className = "px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-400 border bo
