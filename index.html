@@ -88,7 +88,7 @@
                 <!-- Vinyl Crackle Volume -->
                 <div class="space-y-1">
                     <div class="flex items-center justify-between text-[10px] text-slate-300">
-                        <span class="flex items-center gap-1"><i data-lucide="disc" class="w-3.5 h-3.5 text-amber-500 animate-spin-slow"></i> Tiếng rè đĩa than cổ điển</span>
+                        <span class="flex items-center gap-1"><i data-lucide="disc" class="w-3.5 h-3.5 text-amber-500"></i> Tiếng rè đĩa than cổ điển</span>
                         <span id="vinyl-val" class="font-mono text-slate-400">40%</span>
                     </div>
                     <input type="range" id="vinyl-slider" min="0" max="100" value="40" oninput="updateVinyl(this.value)" class="w-full accent-amber-500 bg-slate-950 rounded-lg appearance-none h-1 cursor-pointer" />
@@ -157,7 +157,22 @@
 
     <!-- Web Audio Engine Script -->
     <script>
-        lucide.createIcons();
+        // BỘ TỰ ĐỘNG BẮT LỖI JAVASCRIPT ĐỂ CHẨN ĐOÁN TRÊN ĐIỆN THOẠI
+        window.onerror = function(message, source, lineno, colno, error) {
+            const logBox = document.getElementById('log-box');
+            if (logBox) {
+                const timestamp = new Date().toLocaleTimeString();
+                const entry = document.createElement('div');
+                entry.className = "flex gap-2 leading-relaxed";
+                entry.innerHTML = `<span class="text-slate-500 shrink-0">[${timestamp}]</span><span class="text-red-400 font-semibold">Lỗi JS: ${message} (Dòng ${lineno})</span>`;
+                logBox.appendChild(entry);
+                logBox.scrollTop = logBox.scrollHeight;
+            }
+            return false;
+        };
+
+        // Khởi tạo icon an toàn (tránh lỗi nếu thư viện chưa tải xong)
+        try { lucide.createIcons(); } catch (e) {}
 
         let audioCtx = null;
         let isPlaying = false;
@@ -368,11 +383,11 @@
         }
 
         function playChord(notes, time) {
-            // LFO to simulate warm tape warble (vibrato)
+            // LFO to simulate tape warble
             const lfo = audioCtx.createOscillator();
             const lfoGain = audioCtx.createGain();
-            lfo.frequency.value = 4.2; // 4.2 Hz tape wobble
-            lfoGain.gain.value = 3.5; // wobble depth
+            lfo.frequency.value = 4.2;
+            lfoGain.gain.value = 3.5;
             
             lfo.connect(lfoGain);
             lfo.start(time);
@@ -392,8 +407,8 @@
                 filter.frequency.exponentialRampToValueAtTime(120, time + 2.8);
                 
                 gain.gain.setValueAtTime(0.0, time);
-                gain.gain.linearRampToValueAtTime(0.11, time + 0.12); // Soft warm attack
-                gain.gain.exponentialRampToValueAtTime(0.001, time + 3.0); // Long decay
+                gain.gain.linearRampToValueAtTime(0.11, time + 0.12);
+                gain.gain.exponentialRampToValueAtTime(0.001, time + 3.0);
                 
                 osc.connect(filter);
                 filter.connect(gain);
@@ -405,22 +420,15 @@
         }
 
         function scheduleNote(beatPattern, time) {
-            // Kick on 0, 8, 11
             if (beatPattern === 0 || beatPattern === 8 || beatPattern === 11) {
                 playKick(time);
             }
-            
-            // Snare on 4, 12
             if (beatPattern === 4 || beatPattern === 12) {
                 playSnare(time);
             }
-            
-            // Hi-hat on every even step + some syncopations
             if (beatPattern % 2 === 0 || beatPattern === 5 || beatPattern === 13) {
                 playHiHat(time);
             }
-            
-            // Play relaxing chord on beat 0 (every 16 steps)
             if (beatPattern === 0) {
                 playChord(chords[currentChordIndex], time);
                 addLog("info", `=== AI phối khí hợp âm lofi thứ ${currentChordIndex + 1} ===`);
@@ -432,7 +440,7 @@
             while (nextNoteTime < audioCtx.currentTime + scheduleAheadTime) {
                 scheduleNote(currentBeat, nextNoteTime);
                 const secondsPerBeat = 60.0 / bpm;
-                nextNoteTime += 0.25 * secondsPerBeat; // 16th notes
+                nextNoteTime += 0.25 * secondsPerBeat;
                 currentBeat = (currentBeat + 1) % 16;
             }
             schedulerTimer = setTimeout(scheduler, lookahead);
@@ -444,18 +452,12 @@
             const statusBadge = document.getElementById('status-badge');
             const recordBtn = document.getElementById('record-btn');
 
-            if (!isPlaying) {
-                if (!audioCtx) initAudio();
-                if (audioCtx.state === 'suspended') audioCtx.resume();
-                
-                isPlaying = true;
-                nextNoteTime = audioCtx.currentTime + 0.05;
-                currentBeat = 0;
-                scheduler();
-
-                playText.textContent = "TẠM DỪNG";
-                playBtn.className = "h-12 rounded-2xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs tracking-wide flex items-center justify-center gap-2 shadow-xl active:scale-[0.99] transition-all";
-                document.getElementById('play-icon').setAttribute('data-lucide', 'pause');
-                
-                statusBadge.textContent = "LIVE";
-                statusBadge.className = "px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-400 border bo
+            try {
+                if (!isPlaying) {
+                    if (!audioCtx) initAudio();
+                    if (audioCtx.state === 'suspended') audioCtx.resume();
+                    
+                    isPlaying = true;
+                    nextNoteTime = audioCtx.currentTime + 0.05;
+                    currentBeat = 0;
+                    scheduler();
