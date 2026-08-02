@@ -1,463 +1,170 @@
 <!DOCTYPE html>
-<html lang="vi" class="dark">
+<html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Lofi Procedural Beatmaker</title>
-    <!-- Tailwind CSS CDN -->
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Lofi Beatmaker</title>
+    <!-- Tailwind CSS và Lucide Icons -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Lucide Icons CDN -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        slate: {
-                            950: '#020617',
-                        }
-                    }
-                }
-            }
-        }
-    </script>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans selection:bg-emerald-900 selection:text-emerald-100">
-
-    <!-- Header -->
-    <header class="sticky top-0 z-40 bg-slate-950/80 backdrop-blur-md border-b border-slate-800/80 px-4 py-3.5">
-        <div class="max-w-xl mx-auto flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="p-2.5 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-500 text-white shadow-lg shadow-purple-600/30">
-                    <i data-lucide="music" class="w-5 h-5 animate-pulse"></i>
-                </div>
-                <div>
-                    <h1 class="text-sm font-bold text-white tracking-tight">AI Lofi Beatmaker</h1>
-                    <p class="text-[10px] text-slate-400">Procedural Web Audio Synthesizer</p>
-                </div>
-            </div>
-            <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-purple-500/10 text-purple-400 border border-purple-500/20">
-                100% Offline
-            </span>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col p-4 justify-center items-center font-sans">
+    <div class="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-5 shadow-2xl">
+        <div class="flex items-center gap-3 border-b border-slate-800 pb-3">
+            <div class="p-2 rounded-xl bg-purple-600 text-white"><i data-lucide="music" class="w-5 h-5 animate-pulse"></i></div>
+            <div><h1 class="text-sm font-bold">AI Lofi Beatmaker</h1><p class="text-[10px] text-slate-400">Web Audio Procedural Synthesizer</p></div>
         </div>
-    </header>
-
-    <!-- Main Body -->
-    <main class="flex-1 max-w-xl w-full mx-auto p-4 space-y-4 overflow-y-auto">
-        
-        <!-- Synthesizer Controls -->
-        <div class="rounded-2xl bg-slate-900 border border-slate-800 p-4 space-y-4 shadow-lg">
-            <div class="flex items-center justify-between border-b border-slate-800 pb-2">
-                <div class="flex items-center gap-2 font-bold text-slate-200 text-xs">
-                    <i data-lucide="sliders" class="w-4 h-4 text-purple-400"></i>
-                    Bảng Điều Khiển Giai Điệu & Nhịp Điệu
-                </div>
-            </div>
-
-            <!-- BPM Control -->
-            <div class="space-y-1">
-                <div class="flex items-center justify-between text-[11px] text-slate-400">
-                    <span>Tốc độ nhịp (BPM):</span>
-                    <span id="bpm-val" class="font-mono font-bold text-purple-400">75 BPM</span>
-                </div>
-                <input 
-                    type="range" 
-                    id="bpm-slider" 
-                    min="60" 
-                    max="95" 
-                    value="75"
-                    oninput="updateBPM(this.value)"
-                    class="w-full accent-purple-500 bg-slate-950 rounded-lg appearance-none h-1.5 cursor-pointer"
-                />
-            </div>
-
-            <!-- Ambient Sound Mixers -->
-            <div class="space-y-3 pt-1">
-                <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Âm thanh nền (Ambient Mixer)</div>
-                
-                <!-- Rain Volume -->
-                <div class="space-y-1">
-                    <div class="flex items-center justify-between text-[10px] text-slate-300">
-                        <span class="flex items-center gap-1"><i data-lucide="cloud-rain" class="w-3.5 h-3.5 text-blue-400"></i> Tiếng mưa rơi</span>
-                        <span id="rain-val" class="font-mono text-slate-400">50%</span>
-                    </div>
-                    <input type="range" id="rain-slider" min="0" max="100" value="50" oninput="updateRain(this.value)" class="w-full accent-blue-500 bg-slate-950 rounded-lg appearance-none h-1 cursor-pointer" />
-                </div>
-
-                <!-- Vinyl Crackle Volume -->
-                <div class="space-y-1">
-                    <div class="flex items-center justify-between text-[10px] text-slate-300">
-                        <span class="flex items-center gap-1"><i data-lucide="disc" class="w-3.5 h-3.5 text-amber-500"></i> Tiếng rè đĩa than cổ điển</span>
-                        <span id="vinyl-val" class="font-mono text-slate-400">40%</span>
-                    </div>
-                    <input type="range" id="vinyl-slider" min="0" max="100" value="40" oninput="updateVinyl(this.value)" class="w-full accent-amber-500 bg-slate-950 rounded-lg appearance-none h-1 cursor-pointer" />
-                </div>
-            </div>
+        <!-- Sliders -->
+        <div class="space-y-3">
+            <div><div class="flex justify-between text-[11px] mb-1"><span>BPM (Tốc độ):</span><span id="bpm-val" class="text-purple-400 font-bold">75 BPM</span></div>
+            <input type="range" id="bpm-slider" min="65" max="95" value="75" oninput="updateBPM(this.value)" class="w-full accent-purple-500 bg-slate-950 h-1.5 appearance-none rounded-lg cursor-pointer"></div>
+            <div><div class="flex justify-between text-[11px] mb-1"><span>Tiếng mưa rơi:</span><span id="rain-val" class="text-blue-400 font-bold">50%</span></div>
+            <input type="range" id="rain-slider" min="0" max="100" value="50" oninput="updateRain(this.value)" class="w-full accent-blue-500 bg-slate-950 h-1 appearance-none rounded-lg cursor-pointer"></div>
+            <div><div class="flex justify-between text-[11px] mb-1"><span>Đĩa rè cổ điển:</span><span id="vinyl-val" class="text-amber-500 font-bold">40%</span></div>
+            <input type="range" id="vinyl-slider" min="0" max="100" value="40" oninput="updateVinyl(this.value)" class="w-full accent-amber-500 bg-slate-950 h-1 appearance-none rounded-lg cursor-pointer"></div>
         </div>
-
-        <!-- Master Player Controls -->
+        <!-- Buttons -->
         <div class="grid grid-cols-2 gap-3">
-            <button 
-                id="play-btn"
-                onclick="togglePlayback()"
-                class="h-12 rounded-2xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs tracking-wide flex items-center justify-center gap-2 shadow-xl shadow-purple-600/20 active:scale-[0.99] transition-all"
-            >
-                <i id="play-icon" data-lucide="play" class="w-4 h-4 fill-white"></i>
-                <span id="play-text">PHÁT NHẠC LOFI</span>
-            </button>
-
-            <button 
-                id="record-btn"
-                onclick="toggleRecording()"
-                disabled
-                class="h-12 rounded-2xl bg-slate-800 border border-slate-700 disabled:opacity-50 text-slate-400 font-bold text-xs tracking-wide flex items-center justify-center gap-2 transition-all"
-            >
-                <i id="record-icon" data-lucide="circle" class="w-4 h-4 text-red-500"></i>
-                <span id="record-text">BẮT ĐẦU GHI ÂM</span>
-            </button>
+            <button id="play-btn" onclick="togglePlayback()" class="h-12 rounded-2xl bg-purple-600 font-bold text-xs flex items-center justify-center gap-2 shadow-lg"><i data-lucide="play" class="w-4 h-4 fill-white"></i>PHÁT NHẠC</button>
+            <button id="record-btn" onclick="toggleRecording()" disabled class="h-12 rounded-2xl bg-slate-800 disabled:opacity-50 text-slate-400 font-bold text-xs flex items-center justify-center gap-2"><i data-lucide="circle" class="w-4 h-4 text-red-500"></i>GHI ÂM</button>
         </div>
-
-        <!-- Download Card (Initially Hidden) -->
-        <div id="download-card" class="hidden rounded-2xl bg-slate-900 border border-emerald-800/80 p-4 space-y-3 shadow-lg">
-            <div class="flex items-center gap-2 font-bold text-emerald-400 text-xs">
-                <i data-lucide="check-circle-2" class="w-4 h-4"></i>
-                Ghi Âm Hoàn Tất! Bản nhạc lofi độc quyền của bạn đã sẵn sàng
-            </div>
-            <a 
-                id="download-btn"
-                href="#"
-                class="w-full h-11 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs tracking-wide flex items-center justify-center gap-2 shadow-lg transition-all"
-            >
-                <i data-lucide="download" class="w-4 h-4"></i>
-                TẢI BẢN NHẠC VỀ ĐIỆN THOẠI (.WAV)
-            </a>
-        </div>
-
-        <!-- Status Logs -->
-        <div class="rounded-2xl bg-slate-900 border border-slate-800 p-4 space-y-2 shadow-lg">
-            <div class="flex items-center justify-between border-b border-slate-800 pb-2">
-                <div class="flex items-center gap-2 font-bold text-slate-200 text-xs">
-                    <i data-lucide="terminal" class="w-4 h-4 text-purple-400"></i>
-                    Nhật ký bộ máy phát nhạc (Procedural Engine)
-                </div>
-                <span id="status-badge" class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-slate-800 text-slate-400 border border-slate-700">OFFLINE</span>
-            </div>
-            <div id="log-box" class="rounded-xl bg-slate-950 border border-slate-800 p-2.5 font-mono text-[9px] space-y-1 h-28 overflow-y-auto">
-                <div class="text-slate-500">[00:00:00] Bộ máy phát nhạc sẵn sàng. Bấm PHÁT NHẠC LOFI để AI bắt đầu phối khí trực tiếp.</div>
-            </div>
-        </div>
-
-    </main>
-
-    <!-- Footer -->
-    <footer class="border-t border-slate-800/80 py-4 px-4 text-center text-[10px] text-slate-500 bg-slate-950">
-        <p>Built with Web Audio API. 100% client-side sound synthesis.</p>
-    </footer>
-
-    <!-- Web Audio Engine Script -->
+        <!-- Download Card -->
+        <div id="download-card" class="hidden p-3 rounded-2xl bg-emerald-950/40 border border-emerald-800 text-center"><a id="download-btn" href="#" class="w-full h-10 rounded-xl bg-emerald-600 text-white font-bold text-xs flex items-center justify-center gap-2"><i data-lucide="download" class="w-4 h-4"></i>TẢI BẢN NHẠC (.WAV)</a></div>
+        <!-- Logs -->
+        <div class="space-y-1.5"><div class="text-[10px] text-slate-400 font-semibold flex items-center gap-1"><i data-lucide="terminal" class="w-3.5 h-3.5 text-purple-400"></i>Nhật ký (Console Logs):</div>
+        <div id="log-box" class="rounded-xl bg-slate-950 border border-slate-800 p-2 font-mono text-[9px] h-24 overflow-y-auto space-y-0.5"><div class="text-slate-500">[00:00:00] Sẵn sàng phát nhạc lofi offline.</div></div></div>
+    </div>
     <script>
-        // BỘ TỰ ĐỘNG BẮT LỖI JAVASCRIPT ĐỂ CHẨN ĐOÁN TRÊN ĐIỆN THOẠI
-        window.onerror = function(message, source, lineno, colno, error) {
-            const logBox = document.getElementById('log-box');
-            if (logBox) {
-                const timestamp = new Date().toLocaleTimeString();
-                const entry = document.createElement('div');
-                entry.className = "flex gap-2 leading-relaxed";
-                entry.innerHTML = `<span class="text-slate-500 shrink-0">[${timestamp}]</span><span class="text-red-400 font-semibold">Lỗi JS: ${message} (Dòng ${lineno})</span>`;
-                logBox.appendChild(entry);
-                logBox.scrollTop = logBox.scrollHeight;
-            }
+        window.onerror = function(msg, url, line) {
+            const box = document.getElementById('log-box');
+            if (box) { box.innerHTML += `<div class="text-red-400 font-bold">[Lỗi] Dòng ${line}: ${msg}</div>`; box.scrollTop = box.scrollHeight; }
             return false;
         };
-
-        // Khởi tạo icon an toàn (tránh lỗi nếu thư viện chưa tải xong)
-        try { lucide.createIcons(); } catch (e) {}
-
-        let audioCtx = null;
-        let isPlaying = false;
-        let isRecording = false;
-        let mediaRecorder = null;
-        let recordedChunks = [];
-        let recordDestination = null;
-
-        // Audio Nodes
-        let masterGain = null;
-        let rainGain = null;
-        let vinylGain = null;
-        let rainSource = null;
-        let vinylSource = null;
-
-        // Sequencer variables
-        let schedulerTimer = null;
-        let bpm = 75;
-        let currentBeat = 0;
-        let nextNoteTime = 0.0;
-        const scheduleAheadTime = 0.1;
-        const lookahead = 25.0;
-
-        // Lofi Chord Progression (Cmaj7 - Am7 - Dm7 - G7)
-        const chords = [
-            [261.63, 329.63, 392.00, 493.88], // Cmaj7
-            [220.00, 261.63, 329.63, 392.00], // Am7
-            [293.66, 349.23, 440.00, 523.25], // Dm7
-            [196.00, 246.94, 293.66, 349.23]  // G7
-        ];
-        let currentChordIndex = 0;
-
-        function addLog(level, message) {
-            const logBox = document.getElementById('log-box');
-            const timestamp = new Date().toLocaleTimeString();
-            let colorClass = "text-slate-300";
-            if (level === "success") colorClass = "text-emerald-400 font-semibold";
-            if (level === "info") colorClass = "text-purple-300";
-            if (level === "warn") colorClass = "text-amber-400";
-
-            const entry = document.createElement('div');
-            entry.className = "flex gap-2 leading-relaxed";
-            entry.innerHTML = `<span class="text-slate-500 shrink-0">[${timestamp}]</span><span class="${colorClass}">${message}</span>`;
-            logBox.appendChild(entry);
-            logBox.scrollTop = logBox.scrollHeight;
+        try { lucide.createIcons(); } catch(e) {}
+        let audioCtx = null, isPlaying = false, isRecording = false, mediaRecorder = null, recordedChunks = [], recordDestination = null;
+        let masterGain = null, rainGain = null, vinylGain = null, rainSource = null, vinylSource = null, schedulerTimer = null;
+        let bpm = 75, currentBeat = 0, nextNoteTime = 0.0, currentChordIndex = 0;
+        const scheduleAheadTime = 0.1, lookahead = 25.0;
+        const chords = [[261.63, 329.63, 392.00, 493.88], [220.00, 261.63, 329.63, 392.00], [293.66, 349.23, 440.00, 523.25], [196.00, 246.94, 293.66, 349.23]];
+        function addLog(level, msg) {
+            const box = document.getElementById('log-box'); if (!box) return;
+            const color = level === 'success' ? 'text-emerald-400 font-bold' : level === 'warn' ? 'text-amber-400' : level === 'info' ? 'text-purple-300' : 'text-slate-300';
+            box.innerHTML += `<div class="${color}">[${new Date().toLocaleTimeString()}] ${msg}</div>`; box.scrollTop = box.scrollHeight;
         }
-
-        function updateBPM(val) {
-            bpm = parseInt(val);
-            document.getElementById('bpm-val').textContent = `${bpm} BPM`;
-        }
-
-        function updateRain(val) {
-            const gainVal = parseFloat(val) / 100;
-            document.getElementById('rain-val').textContent = `${val}%`;
-            if (rainGain) rainGain.gain.setValueAtTime(gainVal * 0.15, audioCtx.currentTime);
-        }
-
-        function updateVinyl(val) {
-            const gainVal = parseFloat(val) / 100;
-            document.getElementById('vinyl-val').textContent = `${val}%`;
-            if (vinylGain) vinylGain.gain.setValueAtTime(gainVal * 0.08, audioCtx.currentTime);
-        }
-
+        function updateBPM(val) { bpm = parseInt(val); document.getElementById('bpm-val').textContent = `${bpm} BPM`; }
+        function updateRain(val) { document.getElementById('rain-val').textContent = `${val}%`; if (rainGain) rainGain.gain.setValueAtTime((parseFloat(val)/100) * 0.15, audioCtx.currentTime); }
+        function updateVinyl(val) { document.getElementById('vinyl-val').textContent = `${val}%`; if (vinylGain) vinylGain.gain.setValueAtTime((parseFloat(val)/100) * 0.08, audioCtx.currentTime); }
         function createNoiseBuffer() {
-            const bufferSize = 2 * audioCtx.sampleRate;
-            const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-            const output = noiseBuffer.getChannelData(0);
-            for (let i = 0; i < bufferSize; i++) {
-                output[i] = Math.random() * 2 - 1;
-            }
-            return noiseBuffer;
+            const size = 2 * audioCtx.sampleRate, buffer = audioCtx.createBuffer(1, size, audioCtx.sampleRate), out = buffer.getChannelData(0);
+            for (let i = 0; i < size; i++) out[i] = Math.random() * 2 - 1; return buffer;
         }
-
         function initAudio() {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            masterGain = audioCtx.createGain();
-            masterGain.gain.setValueAtTime(1.0, audioCtx.currentTime);
-
-            // Setup recording destination
-            if (audioCtx.createMediaStreamDestination) {
-                recordDestination = audioCtx.createMediaStreamDestination();
-                masterGain.connect(recordDestination);
-            }
+            masterGain = audioCtx.createGain(); masterGain.gain.setValueAtTime(1.0, audioCtx.currentTime);
+            if (audioCtx.createMediaStreamDestination) { recordDestination = audioCtx.createMediaStreamDestination(); masterGain.connect(recordDestination); }
             masterGain.connect(audioCtx.destination);
-
-            // Initialize Rain
-            rainGain = audioCtx.createGain();
-            const rainFilter = audioCtx.createBiquadFilter();
-            rainFilter.type = "lowpass";
-            rainFilter.frequency.setValueAtTime(800, audioCtx.currentTime);
-            
-            rainSource = audioCtx.createBufferSource();
-            rainSource.buffer = createNoiseBuffer();
-            rainSource.loop = true;
-            
-            rainSource.connect(rainFilter);
-            rainFilter.connect(rainGain);
-            rainGain.connect(masterGain);
-            updateRain(document.getElementById('rain-slider').value);
-            rainSource.start(0);
-
-            // Initialize Vinyl Crackle
-            vinylGain = audioCtx.createGain();
-            const vinylFilter = audioCtx.createBiquadFilter();
-            vinylFilter.type = "bandpass";
-            vinylFilter.frequency.setValueAtTime(1200, audioCtx.currentTime);
-            vinylFilter.Q.setValueAtTime(1.5, audioCtx.currentTime);
-
-            vinylSource = audioCtx.createBufferSource();
-            vinylSource.buffer = createNoiseBuffer();
-            vinylSource.loop = true;
-
-            vinylSource.connect(vinylFilter);
-            vinylFilter.connect(vinylGain);
-            vinylGain.connect(masterGain);
-            updateVinyl(document.getElementById('vinyl-slider').value);
-            vinylSource.start(0);
-
-            // Start Vinyl Crackle random pops
-            setInterval(() => {
-                if (!isPlaying || !audioCtx) return;
-                if (Math.random() > 0.45) return;
-                playVinylPop();
-            }, 600);
+            rainGain = audioCtx.createGain(); const rainFilter = audioCtx.createBiquadFilter(); rainFilter.type = "lowpass"; rainFilter.frequency.setValueAtTime(800, audioCtx.currentTime);
+            rainSource = audioCtx.createBufferSource(); rainSource.buffer = createNoiseBuffer(); rainSource.loop = true;
+            rainSource.connect(rainFilter); rainFilter.connect(rainGain); rainGain.connect(masterGain); updateRain(document.getElementById('rain-slider').value); rainSource.start(0);
+            vinylGain = audioCtx.createGain(); const vinylFilter = audioCtx.createBiquadFilter(); vinylFilter.type = "bandpass"; vinylFilter.frequency.setValueAtTime(1200, audioCtx.currentTime); vinylFilter.Q.setValueAtTime(1.5, audioCtx.currentTime);
+            vinylSource = audioCtx.createBufferSource(); vinylSource.buffer = createNoiseBuffer(); vinylSource.loop = true;
+            vinylSource.connect(vinylFilter); vinylFilter.connect(vinylGain); vinylGain.connect(masterGain); updateVinyl(document.getElementById('vinyl-slider').value); vinylSource.start(0);
+            setInterval(() => { if (!isPlaying || !audioCtx || Math.random() > 0.45) return; playVinylPop(); }, 600);
         }
-
         function playVinylPop() {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            const filter = audioCtx.createBiquadFilter();
-            
-            filter.type = "highpass";
-            filter.frequency.setValueAtTime(3200, audioCtx.currentTime);
-            
-            osc.type = "triangle";
-            osc.frequency.setValueAtTime(Math.random() * 800 + 400, audioCtx.currentTime);
-            
-            gain.gain.setValueAtTime(Math.random() * 0.04 + 0.01, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.03);
-            
-            osc.connect(filter);
-            filter.connect(gain);
-            gain.connect(masterGain);
-            
-            osc.start();
-            osc.stop(audioCtx.currentTime + 0.03);
+            const osc = audioCtx.createOscillator(), gain = audioCtx.createGain(), filter = audioCtx.createBiquadFilter();
+            filter.type = "highpass"; filter.frequency.setValueAtTime(3200, audioCtx.currentTime);
+            osc.type = "triangle"; osc.frequency.setValueAtTime(Math.random() * 800 + 400, audioCtx.currentTime);
+            gain.gain.setValueAtTime(Math.random() * 0.04 + 0.01, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.03);
+            osc.connect(filter); filter.connect(gain); gain.connect(masterGain); osc.start(); osc.stop(audioCtx.currentTime + 0.03);
         }
-
         function playKick(time) {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            
-            osc.frequency.setValueAtTime(140, time);
-            osc.frequency.exponentialRampToValueAtTime(0.01, time + 0.18);
-            
-            gain.gain.setValueAtTime(0.6, time);
-            gain.gain.exponentialRampToValueAtTime(0.001, time + 0.18);
-            
-            osc.connect(gain);
-            gain.connect(masterGain);
-            
-            osc.start(time);
-            osc.stop(time + 0.18);
+            const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+            osc.frequency.setValueAtTime(140, time); osc.frequency.exponentialRampToValueAtTime(0.01, time + 0.18);
+            gain.gain.setValueAtTime(0.6, time); gain.gain.exponentialRampToValueAtTime(0.001, time + 0.18);
+            osc.connect(gain); gain.connect(masterGain); osc.start(time); osc.stop(time + 0.18);
         }
-
         function playHiHat(time) {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            const filter = audioCtx.createBiquadFilter();
-            
-            filter.type = "highpass";
-            filter.frequency.setValueAtTime(8000, time);
-            
-            osc.type = "square";
-            osc.frequency.setValueAtTime(12000, time);
-            
-            gain.gain.setValueAtTime(0.06, time);
-            gain.gain.exponentialRampToValueAtTime(0.001, time + 0.04);
-            
-            osc.connect(filter);
-            filter.connect(gain);
-            gain.connect(masterGain);
-            
-            osc.start(time);
-            osc.stop(time + 0.04);
+            const osc = audioCtx.createOscillator(), gain = audioCtx.createGain(), filter = audioCtx.createBiquadFilter();
+            filter.type = "highpass"; filter.frequency.setValueAtTime(8000, time);
+            osc.type = "square"; osc.frequency.setValueAtTime(12000, time);
+            gain.gain.setValueAtTime(0.06, time); gain.gain.exponentialRampToValueAtTime(0.001, time + 0.04);
+            osc.connect(filter); filter.connect(gain); gain.connect(masterGain); osc.start(time); osc.stop(time + 0.04);
         }
-
         function playSnare(time) {
-            const noise = audioCtx.createBufferSource();
-            noise.buffer = createNoiseBuffer();
-            const filter = audioCtx.createBiquadFilter();
-            const gain = audioCtx.createGain();
-            
-            filter.type = "bandpass";
-            filter.frequency.setValueAtTime(1000, time);
-            filter.Q.setValueAtTime(1.8, time);
-            
-            gain.gain.setValueAtTime(0.18, time);
-            gain.gain.exponentialRampToValueAtTime(0.001, time + 0.22);
-            
-            noise.connect(filter);
-            filter.connect(gain);
-            gain.connect(masterGain);
-            
-            noise.start(time);
-            noise.stop(time + 0.22);
+            const noise = audioCtx.createBufferSource(); noise.buffer = createNoiseBuffer(); const filter = audioCtx.createBiquadFilter(), gain = audioCtx.createGain();
+            filter.type = "bandpass"; filter.frequency.setValueAtTime(1000, time); filter.Q.setValueAtTime(1.8, time);
+            gain.gain.setValueAtTime(0.18, time); gain.gain.exponentialRampToValueAtTime(0.001, time + 0.22);
+            noise.connect(filter); filter.connect(gain); gain.connect(masterGain); noise.start(time); noise.stop(time + 0.22);
         }
-
         function playChord(notes, time) {
-            // LFO to simulate tape warble
-            const lfo = audioCtx.createOscillator();
-            const lfoGain = audioCtx.createGain();
-            lfo.frequency.value = 4.2;
-            lfoGain.gain.value = 3.5;
-            
-            lfo.connect(lfoGain);
-            lfo.start(time);
-            lfo.stop(time + 3.2);
-            
+            const lfo = audioCtx.createOscillator(), lfoGain = audioCtx.createGain();
+            lfo.frequency.value = 4.2; lfoGain.gain.value = 3.5; lfo.connect(lfoGain); lfo.start(time); lfo.stop(time + 3.2);
             notes.forEach(freq => {
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                const filter = audioCtx.createBiquadFilter();
-                
-                osc.type = "triangle";
-                osc.frequency.value = freq;
-                lfoGain.connect(osc.frequency);
-                
-                filter.type = "lowpass";
-                filter.frequency.setValueAtTime(550, time);
-                filter.frequency.exponentialRampToValueAtTime(120, time + 2.8);
-                
-                gain.gain.setValueAtTime(0.0, time);
-                gain.gain.linearRampToValueAtTime(0.11, time + 0.12);
-                gain.gain.exponentialRampToValueAtTime(0.001, time + 3.0);
-                
-                osc.connect(filter);
-                filter.connect(gain);
-                gain.connect(masterGain);
-                
-                osc.start(time);
-                osc.stop(time + 3.2);
+                const osc = audioCtx.createOscillator(), gain = audioCtx.createGain(), filter = audioCtx.createBiquadFilter();
+                osc.type = "triangle"; osc.frequency.value = freq; lfoGain.connect(osc.frequency);
+                filter.type = "lowpass"; filter.frequency.setValueAtTime(550, time); filter.frequency.exponentialRampToValueAtTime(120, time + 2.8);
+                gain.gain.setValueAtTime(0.0, time); gain.gain.linearRampToValueAtTime(0.11, time + 0.12); gain.gain.exponentialRampToValueAtTime(0.001, time + 3.0);
+                osc.connect(filter); filter.connect(gain); gain.connect(masterGain); osc.start(time); osc.stop(time + 3.2);
             });
         }
-
-        function scheduleNote(beatPattern, time) {
-            if (beatPattern === 0 || beatPattern === 8 || beatPattern === 11) {
-                playKick(time);
-            }
-            if (beatPattern === 4 || beatPattern === 12) {
-                playSnare(time);
-            }
-            if (beatPattern % 2 === 0 || beatPattern === 5 || beatPattern === 13) {
-                playHiHat(time);
-            }
-            if (beatPattern === 0) {
-                playChord(chords[currentChordIndex], time);
-                addLog("info", `=== AI phối khí hợp âm lofi thứ ${currentChordIndex + 1} ===`);
-                currentChordIndex = (currentChordIndex + 1) % chords.length;
-            }
-        }
-
         function scheduler() {
             while (nextNoteTime < audioCtx.currentTime + scheduleAheadTime) {
-                scheduleNote(currentBeat, nextNoteTime);
-                const secondsPerBeat = 60.0 / bpm;
-                nextNoteTime += 0.25 * secondsPerBeat;
-                currentBeat = (currentBeat + 1) % 16;
+                if (currentBeat === 0 || currentBeat === 8 || currentBeat === 11) playKick(nextNoteTime);
+                if (currentBeat === 4 || currentBeat === 12) playSnare(nextNoteTime);
+                if (currentBeat % 2 === 0 || currentBeat === 5 || currentBeat === 13) playHiHat(nextNoteTime);
+                if (currentBeat === 0) {
+                    playChord(chords[currentChordIndex], nextNoteTime);
+                    addLog("info", `AI phối khí hợp âm thứ ${currentChordIndex + 1}`);
+                    currentChordIndex = (currentChordIndex + 1) % chords.length;
+                }
+                nextNoteTime += 0.25 * (60.0 / bpm); currentBeat = (currentBeat + 1) % 16;
             }
             schedulerTimer = setTimeout(scheduler, lookahead);
         }
-
         function togglePlayback() {
-            const playBtn = document.getElementById('play-btn');
-            const playText = document.getElementById('play-text');
-            const statusBadge = document.getElementById('status-badge');
-            const recordBtn = document.getElementById('record-btn');
-
+            const playBtn = document.getElementById('play-btn'), playText = document.getElementById('play-text'), recordBtn = document.getElementById('record-btn');
             try {
                 if (!isPlaying) {
-                    if (!audioCtx) initAudio();
-                    if (audioCtx.state === 'suspended') audioCtx.resume();
-                    
-                    isPlaying = true;
-                    nextNoteTime = audioCtx.currentTime + 0.05;
-                    currentBeat = 0;
-                    scheduler();
+                    if (!audioCtx) initAudio(); if (audioCtx.state === 'suspended') audioCtx.resume();
+                    isPlaying = true; nextNoteTime = audioCtx.currentTime + 0.05; currentBeat = 0; scheduler();
+                    playText.textContent = "TẠM DỪNG"; playBtn.className = "h-12 rounded-2xl bg-amber-600 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xl";
+                    recordBtn.disabled = false; recordBtn.classList.remove('opacity-50'); recordBtn.classList.add('text-slate-200');
+                    addLog("success", `Khởi chạy thành công! Nhịp: ${bpm} BPM.`);
+                } else {
+                    isPlaying = false; clearTimeout(schedulerTimer); if (audioCtx) audioCtx.suspend();
+                    playText.textContent = "PHÁT NHẠC"; playBtn.className = "h-12 rounded-2xl bg-purple-600 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xl";
+                    if (isRecording) toggleRecording(); recordBtn.disabled = true; recordBtn.className = "h-12 rounded-2xl bg-slate-800 disabled:opacity-50 text-slate-400 font-bold text-xs flex items-center justify-center gap-2";
+                    addLog("warn", "Đã tạm dừng.");
+                }
+            } catch (err) { addLog("error", `Lỗi: ${err.message}`); }
+            try { lucide.createIcons(); } catch (e) {}
+        }
+        function toggleRecording() {
+            const recordBtn = document.getElementById('record-btn'), recordText = document.getElementById('record-text'), card = document.getElementById('download-card'), btn = document.getElementById('download-btn');
+            try {
+                if (!isRecording) {
+                    isRecording = true; recordedChunks = []; card.classList.add('hidden');
+                    let mime = 'audio/webm;codecs=opus';
+                    if (!MediaRecorder.isTypeSupported(mime)) mime = 'audio/ogg';
+                    if (!MediaRecorder.isTypeSupported(mime)) mime = '';
+                    mediaRecorder = new MediaRecorder(recordDestination.stream, mime ? { mimeType: mime } : {});
+                    mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
+                    mediaRecorder.onstop = () => {
+                        const blob = new Blob(recordedChunks, { type: mime || 'audio/wav' }), url = URL.createObjectURL(blob);
+                        btn.href = url; btn.download = `my-lofi-beat-${Date.now()}.wav`; card.classList.remove('hidden');
+                        addLog("success", "Đóng gói file .wav thành công!");
+                    };
+                    mediaRecorder.start(); recordText.textContent = "DỪNG GHI";
+                    recordBtn.className = "h-12 rounded-2xl bg-red-600 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xl animate-pulse";
+                    addLog("success", "Đang ghi âm nhạc lofi...");
+                } else {
+                    isRecording = false; mediaRecorder.stop(); recordText.textContent = "BẮT ĐẦU GHI ÂM";
+                    recordBtn.className = "h-12 rounded-2xl bg-slate-800 text-slate-200 font-bold text-xs flex items-center justify-center gap-2";
+                    addLog("warn", "Đã dừng ghi âm.");
+                }
+            } catch (err) { addLog("error", `Lỗi: ${err.message}`); }
+            try { lucide.createIcons(); } catch (e) {}
+        }
+    </script>
+</body>
+</html>
