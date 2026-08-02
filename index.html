@@ -11,7 +11,7 @@
     <div class="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-5 shadow-2xl">
         <div class="flex items-center gap-3 border-b border-slate-800 pb-3">
             <div class="p-2 rounded-xl bg-purple-600 text-white"><i data-lucide="music" class="w-5 h-5 animate-pulse"></i></div>
-            <div><h1 class="text-sm font-bold">AI Lofi Beatmaker</h1><p class="text-[10px] text-slate-400">Web Audio Procedural Synthesizer</p></div>
+            <div><h1 class="text-sm font-bold">AI Lofi Beatmaker PRO</h1><p class="text-[10px] text-slate-400">Procedural Web Audio Synthesizer with Echo & Bass</p></div>
         </div>
         <!-- Sliders -->
         <div class="space-y-3">
@@ -42,6 +42,7 @@
         try { lucide.createIcons(); } catch(e) {}
         let audioCtx = null, isPlaying = false, isRecording = false, mediaRecorder = null, recordedChunks = [], recordDestination = null;
         let masterGain = null, rainGain = null, vinylGain = null, rainSource = null, vinylSource = null, schedulerTimer = null;
+        let delayNode = null, feedbackGain = null; // Hiệu ứng tiếng vang Echo/Delay
         let bpm = 75, currentBeat = 0, nextNoteTime = 0.0, currentChordIndex = 0;
         const scheduleAheadTime = 0.1, lookahead = 25.0;
         const chords = [[261.63, 329.63, 392.00, 493.88], [220.00, 261.63, 329.63, 392.00], [293.66, 349.23, 440.00, 523.25], [196.00, 246.94, 293.66, 349.23]];
@@ -62,6 +63,13 @@
             masterGain = audioCtx.createGain(); masterGain.gain.setValueAtTime(1.0, audioCtx.currentTime);
             if (audioCtx.createMediaStreamDestination) { recordDestination = audioCtx.createMediaStreamDestination(); masterGain.connect(recordDestination); }
             masterGain.connect(audioCtx.destination);
+            
+            // Khởi tạo bộ Echo/Delay tạo độ vang không gian
+            delayNode = audioCtx.createDelay(2.0); feedbackGain = audioCtx.createGain();
+            delayNode.delayTime.setValueAtTime(0.38, audioCtx.currentTime); // Độ vang trễ 380ms
+            feedbackGain.gain.setValueAtTime(0.32, audioCtx.currentTime); // Giữ lại 32% âm thanh lặp
+            delayNode.connect(feedbackGain); feedbackGain.connect(delayNode); feedbackGain.connect(masterGain);
+
             rainGain = audioCtx.createGain(); const rainFilter = audioCtx.createBiquadFilter(); rainFilter.type = "lowpass"; rainFilter.frequency.setValueAtTime(800, audioCtx.currentTime);
             rainSource = audioCtx.createBufferSource(); rainSource.buffer = createNoiseBuffer(); rainSource.loop = true;
             rainSource.connect(rainFilter); rainFilter.connect(rainGain); rainGain.connect(masterGain); updateRain(document.getElementById('rain-slider').value); rainSource.start(0);
@@ -96,6 +104,21 @@
             gain.gain.setValueAtTime(0.18, time); gain.gain.exponentialRampToValueAtTime(0.001, time + 0.22);
             noise.connect(filter); filter.connect(gain); gain.connect(masterGain); noise.start(time); noise.stop(time + 0.22);
         }
+        function playBass(freq, time) {
+            const osc = audioCtx.createOscillator(), gain = audioCtx.createGain(), filter = audioCtx.createBiquadFilter();
+            osc.type = "sine"; osc.frequency.setValueAtTime(freq / 2, time); // Hạ xuống 1 quãng tám
+            filter.type = "lowpass"; filter.frequency.setValueAtTime(150, time); // Lọc bỏ tần số cao cho tiếng bass ấm trầm
+            gain.gain.setValueAtTime(0.0, time); gain.gain.linearRampToValueAtTime(0.26, time + 0.1); gain.gain.exponentialRampToValueAtTime(0.001, time + 2.8);
+            osc.connect(filter); filter.connect(gain); gain.connect(masterGain); osc.start(time); osc.stop(time + 3.0);
+        }
+        function playLeadNote(freq, time) {
+            const osc = audioCtx.createOscillator(), gain = audioCtx.createGain(), filter = audioCtx.createBiquadFilter();
+            osc.type = "triangle"; osc.frequency.setValueAtTime(freq * 2, time); // Tăng lên 1 quãng tám
+            filter.type = "lowpass"; filter.frequency.setValueAtTime(900, time);
+            gain.gain.setValueAtTime(0.0, time); gain.gain.linearRampToValueAtTime(0.04, time + 0.08); gain.gain.exponentialRampToValueAtTime(0.001, time + 0.7);
+            osc.connect(filter); filter.connect(gain); gain.connect(delayNode); gain.connect(masterGain); // Đẩy nốt solo qua tiếng vang cho bay bổng
+            osc.start(time); osc.stop(time + 0.8);
+        }
         function playChord(notes, time) {
             const lfo = audioCtx.createOscillator(), lfoGain = audioCtx.createGain();
             lfo.frequency.value = 4.2; lfoGain.gain.value = 3.5; lfo.connect(lfoGain); lfo.start(time); lfo.stop(time + 3.2);
@@ -104,7 +127,8 @@
                 osc.type = "triangle"; osc.frequency.value = freq; lfoGain.connect(osc.frequency);
                 filter.type = "lowpass"; filter.frequency.setValueAtTime(550, time); filter.frequency.exponentialRampToValueAtTime(120, time + 2.8);
                 gain.gain.setValueAtTime(0.0, time); gain.gain.linearRampToValueAtTime(0.11, time + 0.12); gain.gain.exponentialRampToValueAtTime(0.001, time + 3.0);
-                osc.connect(filter); filter.connect(gain); gain.connect(masterGain); osc.start(time); osc.stop(time + 3.2);
+                osc.connect(filter); filter.connect(gain); gain.connect(masterGain); gain.connect(delayNode); // Đẩy hợp âm qua bộ vang Echo
+                osc.start(time); osc.stop(time + 3.2);
             });
         }
         function scheduler() {
@@ -112,11 +136,22 @@
                 if (currentBeat === 0 || currentBeat === 8 || currentBeat === 11) playKick(nextNoteTime);
                 if (currentBeat === 4 || currentBeat === 12) playSnare(nextNoteTime);
                 if (currentBeat % 2 === 0 || currentBeat === 5 || currentBeat === 13) playHiHat(nextNoteTime);
+                
+                // Chơi hợp âm và Bass đệm ở phách đầu tiên (beat 0)
                 if (currentBeat === 0) {
                     playChord(chords[currentChordIndex], nextNoteTime);
-                    addLog("info", `AI phối khí hợp âm thứ ${currentChordIndex + 1}`);
+                    playBass(chords[currentChordIndex][0], nextNoteTime); // Đánh bass trầm theo nốt chủ
+                    addLog("info", `AI phối hợp âm + Bass đệm thứ ${currentChordIndex + 1}`);
                     currentChordIndex = (currentChordIndex + 1) % chords.length;
                 }
+                
+                // Tự động solo giai điệu ngẫu nhiên trên các phách lẻ (tỷ lệ 30%)
+                if (currentBeat % 4 !== 0 && Math.random() < 0.3) {
+                    const activeNotes = chords[currentChordIndex];
+                    const randomNote = activeNotes[Math.floor(Math.random() * activeNotes.length)];
+                    playLeadNote(randomNote, nextNoteTime);
+                }
+                
                 nextNoteTime += 0.25 * (60.0 / bpm); currentBeat = (currentBeat + 1) % 16;
             }
             schedulerTimer = setTimeout(scheduler, lookahead);
