@@ -2,29 +2,32 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Lofi Beatmaker</title>
-    <!-- Tailwind CSS và Lucide Icons -->
+    <title>AI Lofi & Zen Beatmaker</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col p-4 justify-center items-center font-sans">
     <div class="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-5 shadow-2xl">
-        <div class="flex items-center gap-3 border-b border-slate-800 pb-3">
-            <div class="p-2 rounded-xl bg-purple-600 text-white"><i data-lucide="music" class="w-5 h-5 animate-pulse"></i></div>
-            <div><h1 class="text-sm font-bold">AI Lofi Beatmaker PRO</h1><p class="text-[10px] text-slate-400">Procedural Web Audio Synthesizer with Echo & Bass</p></div>
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div class="flex items-center gap-3">
+                <div id="mode-icon-box" class="p-2.5 rounded-xl bg-purple-600 text-white transition-colors"><i id="main-icon" data-lucide="music" class="w-5 h-5 animate-pulse"></i></div>
+                <div><h1 id="app-title" class="text-sm font-bold">AI Lofi Beatmaker</h1><p id="app-subtitle" class="text-[10px] text-slate-400">Procedural Web Audio Synthesizer</p></div>
+            </div>
+            <!-- Nút chuyển đổi chế độ Lofi / Nhạc Thiền -->
+            <button id="mode-toggle" onclick="toggleMode()" class="px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[10px] font-bold transition-all">CHẾ ĐỘ: LOFI</button>
         </div>
         <!-- Sliders -->
         <div class="space-y-3">
             <div><div class="flex justify-between text-[11px] mb-1"><span>BPM (Tốc độ):</span><span id="bpm-val" class="text-purple-400 font-bold">75 BPM</span></div>
-            <input type="range" id="bpm-slider" min="65" max="95" value="75" oninput="updateBPM(this.value)" class="w-full accent-purple-500 bg-slate-950 h-1.5 appearance-none rounded-lg cursor-pointer"></div>
+            <input type="range" id="bpm-slider" min="50" max="95" value="75" oninput="updateBPM(this.value)" class="w-full accent-purple-500 bg-slate-950 h-1.5 appearance-none rounded-lg cursor-pointer"></div>
             <div><div class="flex justify-between text-[11px] mb-1"><span>Tiếng mưa rơi:</span><span id="rain-val" class="text-blue-400 font-bold">50%</span></div>
             <input type="range" id="rain-slider" min="0" max="100" value="50" oninput="updateRain(this.value)" class="w-full accent-blue-500 bg-slate-950 h-1 appearance-none rounded-lg cursor-pointer"></div>
-            <div><div class="flex justify-between text-[11px] mb-1"><span>Đĩa rè cổ điển:</span><span id="vinyl-val" class="text-amber-500 font-bold">40%</span></div>
+            <div><div class="flex justify-between text-[11px] mb-1"><span id="vinyl-label">Đĩa rè cổ điển:</span><span id="vinyl-val" class="text-amber-500 font-bold">40%</span></div>
             <input type="range" id="vinyl-slider" min="0" max="100" value="40" oninput="updateVinyl(this.value)" class="w-full accent-amber-500 bg-slate-950 h-1 appearance-none rounded-lg cursor-pointer"></div>
         </div>
         <!-- Buttons -->
         <div class="grid grid-cols-2 gap-3">
-            <button id="play-btn" onclick="togglePlayback()" class="h-12 rounded-2xl bg-purple-600 font-bold text-xs flex items-center justify-center gap-2 shadow-lg"><i data-lucide="play" class="w-4 h-4 fill-white"></i>PHÁT NHẠC</button>
+            <button id="play-btn" onclick="togglePlayback()" class="h-12 rounded-2xl bg-purple-600 font-bold text-xs flex items-center justify-center gap-2 shadow-lg"><i data-lucide="play" class="w-4 h-4 fill-white animate-play"></i>PHÁT NHẠC</button>
             <button id="record-btn" onclick="toggleRecording()" disabled class="h-12 rounded-2xl bg-slate-800 disabled:opacity-50 text-slate-400 font-bold text-xs flex items-center justify-center gap-2"><i data-lucide="circle" class="w-4 h-4 text-red-500"></i>GHI ÂM</button>
         </div>
         <!-- Download Card -->
@@ -42,10 +45,12 @@
         try { lucide.createIcons(); } catch(e) {}
         let audioCtx = null, isPlaying = false, isRecording = false, mediaRecorder = null, recordedChunks = [], recordDestination = null;
         let masterGain = null, rainGain = null, vinylGain = null, rainSource = null, vinylSource = null, schedulerTimer = null;
-        let delayNode = null, feedbackGain = null; // Hiệu ứng tiếng vang Echo/Delay
+        let delayNode = null, feedbackGain = null, isZenMode = false;
         let bpm = 75, currentBeat = 0, nextNoteTime = 0.0, currentChordIndex = 0;
         const scheduleAheadTime = 0.1, lookahead = 25.0;
         const chords = [[261.63, 329.63, 392.00, 493.88], [220.00, 261.63, 329.63, 392.00], [293.66, 349.23, 440.00, 523.25], [196.00, 246.94, 293.66, 349.23]];
+        // Thang âm ngũ cung thiền tịnh (Zen Pentatonic Scale)
+        const zenScale = [220.00, 261.63, 293.66, 329.63, 392.00, 440.00, 523.25];
         function addLog(level, msg) {
             const box = document.getElementById('log-box'); if (!box) return;
             const color = level === 'success' ? 'text-emerald-400 font-bold' : level === 'warn' ? 'text-amber-400' : level === 'info' ? 'text-purple-300' : 'text-slate-300';
@@ -54,6 +59,24 @@
         function updateBPM(val) { bpm = parseInt(val); document.getElementById('bpm-val').textContent = `${bpm} BPM`; }
         function updateRain(val) { document.getElementById('rain-val').textContent = `${val}%`; if (rainGain) rainGain.gain.setValueAtTime((parseFloat(val)/100) * 0.15, audioCtx.currentTime); }
         function updateVinyl(val) { document.getElementById('vinyl-val').textContent = `${val}%`; if (vinylGain) vinylGain.gain.setValueAtTime((parseFloat(val)/100) * 0.08, audioCtx.currentTime); }
+        function toggleMode() {
+            if (isPlaying) togglePlayback();
+            isZenMode = !isZenMode;
+            const btn = document.getElementById('mode-toggle'), title = document.getElementById('app-title'), sub = document.getElementById('app-subtitle'), iconBox = document.getElementById('mode-icon-box'), vLabel = document.getElementById('vinyl-label');
+            if (isZenMode) {
+                btn.textContent = "CHẾ ĐỘ: NHẠC THIỀN"; btn.className = "px-2.5 py-1 rounded-xl bg-red-950 text-red-400 border border-red-800 text-[10px] font-bold transition-all";
+                title.textContent = "AI Zen Meditation"; sub.textContent = "Buddhist Singing Bowl & Woodblock Synthesizer";
+                iconBox.className = "p-2.5 rounded-2xl bg-gradient-to-tr from-red-600 to-rose-500 text-white shadow-lg shadow-red-600/30";
+                vLabel.textContent = "Tiếng chuông xoay ngân nga:"; updateBPM(55); document.getElementById('bpm-slider').value = 55;
+                addLog("info", "Đã chuyển sang Chế độ NHẠC THIỀN PHẬT GIÁO.");
+            } else {
+                btn.textContent = "CHẾ ĐỘ: LOFI"; btn.className = "px-2.5 py-1 rounded-xl bg-slate-800 text-slate-200 border border-slate-700 text-[10px] font-bold transition-all";
+                title.textContent = "AI Lofi Beatmaker"; sub.textContent = "Procedural Web Audio Synthesizer";
+                iconBox.className = "p-2.5 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-500 text-white shadow-lg shadow-purple-600/30";
+                vLabel.textContent = "Đĩa rè cổ điển:"; updateBPM(75); document.getElementById('bpm-slider').value = 75;
+                addLog("info", "Đã chuyển về Chế độ NHẠC LOFI CHILL.");
+            }
+        }
         function createNoiseBuffer() {
             const size = 2 * audioCtx.sampleRate, buffer = audioCtx.createBuffer(1, size, audioCtx.sampleRate), out = buffer.getChannelData(0);
             for (let i = 0; i < size; i++) out[i] = Math.random() * 2 - 1; return buffer;
@@ -63,13 +86,9 @@
             masterGain = audioCtx.createGain(); masterGain.gain.setValueAtTime(1.0, audioCtx.currentTime);
             if (audioCtx.createMediaStreamDestination) { recordDestination = audioCtx.createMediaStreamDestination(); masterGain.connect(recordDestination); }
             masterGain.connect(audioCtx.destination);
-            
-            // Khởi tạo bộ Echo/Delay tạo độ vang không gian
             delayNode = audioCtx.createDelay(2.0); feedbackGain = audioCtx.createGain();
-            delayNode.delayTime.setValueAtTime(0.38, audioCtx.currentTime); // Độ vang trễ 380ms
-            feedbackGain.gain.setValueAtTime(0.32, audioCtx.currentTime); // Giữ lại 32% âm thanh lặp
+            delayNode.delayTime.setValueAtTime(0.42, audioCtx.currentTime); feedbackGain.gain.setValueAtTime(0.38, audioCtx.currentTime);
             delayNode.connect(feedbackGain); feedbackGain.connect(delayNode); feedbackGain.connect(masterGain);
-
             rainGain = audioCtx.createGain(); const rainFilter = audioCtx.createBiquadFilter(); rainFilter.type = "lowpass"; rainFilter.frequency.setValueAtTime(800, audioCtx.currentTime);
             rainSource = audioCtx.createBufferSource(); rainSource.buffer = createNoiseBuffer(); rainSource.loop = true;
             rainSource.connect(rainFilter); rainFilter.connect(rainGain); rainGain.connect(masterGain); updateRain(document.getElementById('rain-slider').value); rainSource.start(0);
@@ -79,11 +98,28 @@
             setInterval(() => { if (!isPlaying || !audioCtx || Math.random() > 0.45) return; playVinylPop(); }, 600);
         }
         function playVinylPop() {
+            if (isZenMode) return; // Không phát tiếng rè đĩa than khi thiền
             const osc = audioCtx.createOscillator(), gain = audioCtx.createGain(), filter = audioCtx.createBiquadFilter();
             filter.type = "highpass"; filter.frequency.setValueAtTime(3200, audioCtx.currentTime);
             osc.type = "triangle"; osc.frequency.setValueAtTime(Math.random() * 800 + 400, audioCtx.currentTime);
             gain.gain.setValueAtTime(Math.random() * 0.04 + 0.01, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.03);
             osc.connect(filter); filter.connect(gain); gain.connect(masterGain); osc.start(); osc.stop(audioCtx.currentTime + 0.03);
+        }
+        function playMo(time) {
+            const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+            osc.type = "triangle"; osc.frequency.setValueAtTime(560, time); osc.frequency.exponentialRampToValueAtTime(280, time + 0.05);
+            gain.gain.setValueAtTime(0.32, time); gain.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
+            osc.connect(gain); gain.connect(masterGain); osc.start(time); osc.stop(time + 0.05);
+        }
+        function playChuong(time) {
+            [293.66, 295.16, 587.33].forEach((freq, i) => {
+                const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+                osc.type = "sine"; osc.frequency.setValueAtTime(freq, time);
+                gain.gain.setValueAtTime(0.0, time); gain.gain.linearRampToValueAtTime(i === 2 ? 0.02 : 0.05, time + 0.06);
+                gain.gain.exponentialRampToValueAtTime(0.001, time + 6.0); // Chuông ngân siêu dài 6s
+                osc.connect(gain); gain.connect(delayNode); gain.connect(masterGain);
+                osc.start(time); osc.stop(time + 6.1);
+            });
         }
         function playKick(time) {
             const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
@@ -106,52 +142,65 @@
         }
         function playBass(freq, time) {
             const osc = audioCtx.createOscillator(), gain = audioCtx.createGain(), filter = audioCtx.createBiquadFilter();
-            osc.type = "sine"; osc.frequency.setValueAtTime(freq / 2, time); // Hạ xuống 1 quãng tám
-            filter.type = "lowpass"; filter.frequency.setValueAtTime(150, time); // Lọc bỏ tần số cao cho tiếng bass ấm trầm
-            gain.gain.setValueAtTime(0.0, time); gain.gain.linearRampToValueAtTime(0.26, time + 0.1); gain.gain.exponentialRampToValueAtTime(0.001, time + 2.8);
+            osc.type = "sine"; osc.frequency.setValueAtTime(freq / (isZenMode ? 4 : 2), time); // Đánh nốt bass sâu hơn khi thiền
+            filter.type = "lowpass"; filter.frequency.setValueAtTime(120, time);
+            gain.gain.setValueAtTime(0.0, time); gain.gain.linearRampToValueAtTime(0.24, time + 0.1); gain.gain.exponentialRampToValueAtTime(0.001, time + 2.8);
             osc.connect(filter); filter.connect(gain); gain.connect(masterGain); osc.start(time); osc.stop(time + 3.0);
         }
         function playLeadNote(freq, time) {
             const osc = audioCtx.createOscillator(), gain = audioCtx.createGain(), filter = audioCtx.createBiquadFilter();
-            osc.type = "triangle"; osc.frequency.setValueAtTime(freq * 2, time); // Tăng lên 1 quãng tám
-            filter.type = "lowpass"; filter.frequency.setValueAtTime(900, time);
-            gain.gain.setValueAtTime(0.0, time); gain.gain.linearRampToValueAtTime(0.04, time + 0.08); gain.gain.exponentialRampToValueAtTime(0.001, time + 0.7);
-            osc.connect(filter); filter.connect(gain); gain.connect(delayNode); gain.connect(masterGain); // Đẩy nốt solo qua tiếng vang cho bay bổng
-            osc.start(time); osc.stop(time + 0.8);
+            osc.type = isZenMode ? "sine" : "triangle"; // Dùng sóng sin cho tiếng sáo trúc thanh tịnh khi thiền
+            osc.frequency.setValueAtTime(freq * (isZenMode ? 3 : 2), time); 
+            filter.type = "lowpass"; filter.frequency.setValueAtTime(isZenMode ? 400 : 900, time);
+            gain.gain.setValueAtTime(0.0, time); gain.gain.linearRampToValueAtTime(isZenMode ? 0.07 : 0.04, time + 0.15); gain.gain.exponentialRampToValueAtTime(0.001, time + 0.9);
+            osc.connect(filter); filter.connect(gain); gain.connect(delayNode); gain.connect(masterGain);
+            osc.start(time); osc.stop(time + 1.0);
         }
         function playChord(notes, time) {
             const lfo = audioCtx.createOscillator(), lfoGain = audioCtx.createGain();
-            lfo.frequency.value = 4.2; lfoGain.gain.value = 3.5; lfo.connect(lfoGain); lfo.start(time); lfo.stop(time + 3.2);
+            lfo.frequency.value = isZenMode ? 1.5 : 4.2; lfoGain.gain.value = isZenMode ? 1.2 : 3.5; lfo.connect(lfoGain); lfo.start(time); lfo.stop(time + 3.2);
             notes.forEach(freq => {
                 const osc = audioCtx.createOscillator(), gain = audioCtx.createGain(), filter = audioCtx.createBiquadFilter();
                 osc.type = "triangle"; osc.frequency.value = freq; lfoGain.connect(osc.frequency);
-                filter.type = "lowpass"; filter.frequency.setValueAtTime(550, time); filter.frequency.exponentialRampToValueAtTime(120, time + 2.8);
-                gain.gain.setValueAtTime(0.0, time); gain.gain.linearRampToValueAtTime(0.11, time + 0.12); gain.gain.exponentialRampToValueAtTime(0.001, time + 3.0);
-                osc.connect(filter); filter.connect(gain); gain.connect(masterGain); gain.connect(delayNode); // Đẩy hợp âm qua bộ vang Echo
+                filter.type = "lowpass"; filter.frequency.setValueAtTime(isZenMode ? 350 : 550, time); filter.exponentialRampToValueAtTime(100, time + 2.8);
+                gain.gain.setValueAtTime(0.0, time); gain.gain.linearRampToValueAtTime(0.09, time + 0.15); gain.gain.exponentialRampToValueAtTime(0.001, time + 3.0);
+                osc.connect(filter); filter.connect(gain); gain.connect(masterGain); gain.connect(delayNode);
                 osc.start(time); osc.stop(time + 3.2);
             });
         }
         function scheduler() {
             while (nextNoteTime < audioCtx.currentTime + scheduleAheadTime) {
-                if (currentBeat === 0 || currentBeat === 8 || currentBeat === 11) playKick(nextNoteTime);
-                if (currentBeat === 4 || currentBeat === 12) playSnare(nextNoteTime);
-                if (currentBeat % 2 === 0 || currentBeat === 5 || currentBeat === 13) playHiHat(nextNoteTime);
-                
-                // Chơi hợp âm và Bass đệm ở phách đầu tiên (beat 0)
-                if (currentBeat === 0) {
-                    playChord(chords[currentChordIndex], nextNoteTime);
-                    playBass(chords[currentChordIndex][0], nextNoteTime); // Đánh bass trầm theo nốt chủ
-                    addLog("info", `AI phối hợp âm + Bass đệm thứ ${currentChordIndex + 1}`);
-                    currentChordIndex = (currentChordIndex + 1) % chords.length;
+                if (isZenMode) {
+                    // CHẾ ĐỘ NHẠC THIỀN: Tắt toàn bộ trống dồn dập, đổi thành gõ Mõ & Chuông
+                    if (currentBeat === 0) playChuong(nextNoteTime); // Đánh Chuông đồng ngân vang ở phách đầu tiên
+                    if (currentBeat === 4 || currentBeat === 12 || currentBeat === 8) playMo(nextNoteTime); // Gõ Mõ "Cộc Cộc" giữ nhịp thiền
+                    
+                    // Sáng tác giai điệu Ngũ Cung ngẫu nhiên thanh thoát dạng sáo trúc (tỷ lệ 35%)
+                    if (currentBeat % 2 !== 0 && Math.random() < 0.35) {
+                        const randomNote = zenScale[Math.floor(Math.random() * zenScale.length)];
+                        playLeadNote(randomNote, nextNoteTime);
+                    }
+                    // Đánh bass siêu trầm ấm chạy đệm cực chậm (beat 0)
+                    if (currentBeat === 0) {
+                        playBass(zenScale[0], nextNoteTime);
+                        addLog("info", "Zen: Gõ chuông trị liệu + Đánh Bass đệm trầm");
+                    }
+                } else {
+                    // CHẾ ĐỘ LOFI CHILL TRUYỀN THỐNG
+                    if (currentBeat === 0 || currentBeat === 8 || currentBeat === 11) playKick(nextNoteTime);
+                    if (currentBeat === 4 || currentBeat === 12) playSnare(nextNoteTime);
+                    if (currentBeat % 2 === 0 || currentBeat === 5 || currentBeat === 13) playHiHat(nextNoteTime);
+                    if (currentBeat === 0) {
+                        playChord(chords[currentChordIndex], nextNoteTime);
+                        playBass(chords[currentChordIndex][0], nextNoteTime);
+                        addLog("info", `Lofi: Đánh hợp âm + Bass đệm thứ ${currentChordIndex + 1}`);
+                        currentChordIndex = (currentChordIndex + 1) % chords.length;
+                    }
+                    if (currentBeat % 4 !== 0 && Math.random() < 0.3) {
+                        const activeNotes = chords[currentChordIndex];
+                        playLeadNote(activeNotes[Math.floor(Math.random() * activeNotes.length)], nextNoteTime);
+                    }
                 }
-                
-                // Tự động solo giai điệu ngẫu nhiên trên các phách lẻ (tỷ lệ 30%)
-                if (currentBeat % 4 !== 0 && Math.random() < 0.3) {
-                    const activeNotes = chords[currentChordIndex];
-                    const randomNote = activeNotes[Math.floor(Math.random() * activeNotes.length)];
-                    playLeadNote(randomNote, nextNoteTime);
-                }
-                
                 nextNoteTime += 0.25 * (60.0 / bpm); currentBeat = (currentBeat + 1) % 16;
             }
             schedulerTimer = setTimeout(scheduler, lookahead);
@@ -164,7 +213,7 @@
                     isPlaying = true; nextNoteTime = audioCtx.currentTime + 0.05; currentBeat = 0; scheduler();
                     playText.textContent = "TẠM DỪNG"; playBtn.className = "h-12 rounded-2xl bg-amber-600 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xl";
                     recordBtn.disabled = false; recordBtn.classList.remove('opacity-50'); recordBtn.classList.add('text-slate-200');
-                    addLog("success", `Khởi chạy thành công! Nhịp: ${bpm} BPM.`);
+                    addLog("success", `Khởi chạy thành công Chế độ ${isZenMode ? 'THIỀN' : 'LOFI'}! Nhịp: ${bpm} BPM.`);
                 } else {
                     isPlaying = false; clearTimeout(schedulerTimer); if (audioCtx) audioCtx.suspend();
                     playText.textContent = "PHÁT NHẠC"; playBtn.className = "h-12 rounded-2xl bg-purple-600 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xl";
@@ -186,12 +235,12 @@
                     mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
                     mediaRecorder.onstop = () => {
                         const blob = new Blob(recordedChunks, { type: mime || 'audio/wav' }), url = URL.createObjectURL(blob);
-                        btn.href = url; btn.download = `my-lofi-beat-${Date.now()}.wav`; card.classList.remove('hidden');
-                        addLog("success", "Đóng gói file .wav thành công!");
+                        btn.href = url; btn.download = `my-${isZenMode ? 'zen' : 'lofi'}-beat-${Date.now()}.wav`; card.classList.remove('hidden');
+                        addLog("success", `Đóng gói file .wav thành công!`);
                     };
                     mediaRecorder.start(); recordText.textContent = "DỪNG GHI";
                     recordBtn.className = "h-12 rounded-2xl bg-red-600 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xl animate-pulse";
-                    addLog("success", "Đang ghi âm nhạc lofi...");
+                    addLog("success", `Đang ghi âm nhạc ${isZenMode ? 'thiền' : 'lofi'}...`);
                 } else {
                     isRecording = false; mediaRecorder.stop(); recordText.textContent = "BẮT ĐẦU GHI ÂM";
                     recordBtn.className = "h-12 rounded-2xl bg-slate-800 text-slate-200 font-bold text-xs flex items-center justify-center gap-2";
