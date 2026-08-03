@@ -60,20 +60,10 @@
         function initAudio() {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             masterGain = audioCtx.createGain(); masterGain.gain.setValueAtTime(1.0, audioCtx.currentTime);
-            
-            // Cài đặt Compressor nâng tiếng "Mastering" ngăn rè âm, tạo cảm giác dày tiếng như phòng thu
-            const compressor = audioCtx.createDynamicsCompressor();
-            compressor.threshold.setValueAtTime(-15, audioCtx.currentTime);
-            compressor.knee.setValueAtTime(30, audioCtx.currentTime);
-            compressor.ratio.setValueAtTime(12, audioCtx.currentTime);
-            compressor.attack.setValueAtTime(0.003, audioCtx.currentTime);
-            compressor.release.setValueAtTime(0.25, audioCtx.currentTime);
-
             if (audioCtx.createMediaStreamDestination) { recordDestination = audioCtx.createMediaStreamDestination(); masterGain.connect(recordDestination); }
-            masterGain.connect(compressor);
-            compressor.connect(audioCtx.destination);
+            masterGain.connect(audioCtx.destination);
             
-            // Cài đặt Echo/Delay tạo độ vang vọng
+            // Echo/Delay
             delayNode = audioCtx.createDelay(2.0); feedbackGain = audioCtx.createGain();
             delayNode.delayTime.setValueAtTime(0.38, audioCtx.currentTime); feedbackGain.gain.setValueAtTime(0.32, audioCtx.currentTime);
             delayNode.connect(feedbackGain); feedbackGain.connect(delayNode); feedbackGain.connect(masterGain);
@@ -134,7 +124,7 @@
             notes.forEach(freq => {
                 const osc = audioCtx.createOscillator(), gain = audioCtx.createGain(), filter = audioCtx.createBiquadFilter();
                 osc.type = "triangle"; osc.frequency.value = freq; lfoGain.connect(osc.frequency);
-                filter.type = "lowpass"; filter.frequency.setValueAtTime(550, time); filter.exponentialRampToValueAtTime(100, time + 2.8);
+                filter.type = "lowpass"; filter.frequency.setValueAtTime(550, time); filter.frequency.exponentialRampToValueAtTime(100, time + 2.8);
                 gain.gain.setValueAtTime(0.0, time); gain.gain.linearRampToValueAtTime(0.09, time + 0.15); gain.gain.exponentialRampToValueAtTime(0.001, time + 3.0);
                 osc.connect(filter); filter.connect(gain); gain.connect(masterGain); gain.connect(delayNode);
                 osc.start(time); osc.stop(time + 3.2);
