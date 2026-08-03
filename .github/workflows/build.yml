@@ -12,10 +12,11 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Unzip Web project
+    - name: Unzip Web project (Safe Exclude)
       run: |
         if ls *.zip 1> /dev/null 2>&1; then
-          unzip *.zip -d .
+          # Giải nén tự động ghi đè và bảo vệ tệp index.html không bị đè mất
+          unzip -o *.zip -d . -x index.html
         fi
 
     - name: Set up Node.js
@@ -37,10 +38,9 @@ jobs:
 
         for root, dirs, files in os.walk('.'):
             for file in files:
-                # 1. Sửa tệp RtmpStreamService.kt
                 if file == 'RtmpStreamService.kt':
                     path = os.path.join(root, file)
-                    print('=== Sửa file RtmpStreamService.kt:', path)
+                    print('=== Tiến hành vá lỗi file bằng Regex:', path)
                     with open(path, 'r', encoding='utf-8') as f:
                         content = f.read()
                     
@@ -53,50 +53,7 @@ jobs:
 
                     with open(path, 'w', encoding='utf-8') as f:
                         f.write(content)
-
-                # 2. Sửa tệp MainActivity.kt để lưu video vào cache tránh lỗi văng app
-                if file == 'MainActivity.kt':
-                    path = os.path.join(root, file)
-                    print('=== Sửa file MainActivity.kt:', path)
-                    with open(path, 'r', encoding='utf-8') as f:
-                        content = f.read()
-                    
-                    # Thay thế launcher cũ bằng launcher mới có sao chép video vào cache
-                    old_launcher = 'selectedVideoUri = it\n            selectedVideoName = it.lastPathSegment ?: "Selected Video.mp4"\n            Toast.makeText(context, "Video selected!", Toast.LENGTH_SHORT).show()'
-                    new_launcher = 'val cachePath = copyUriToCache(context, it)\n            if (cachePath != null) {\n                selectedVideoUri = Uri.parse(cachePath)\n                selectedVideoName = "Selected Video (Cached)"\n                Toast.makeText(context, "Video prepared!", Toast.LENGTH_SHORT).show()\n            } else {\n                Toast.makeText(context, "Failed to process video!", Toast.LENGTH_SHORT).show()\n            }'
-                    
-                    # Bộ lọc dự phòng xử lý xuống dòng của Windows/Linux
-                    content = content.replace(old_launcher.replace('\n', '\r\n'), new_launcher.replace('\n', '\r\n'))
-                    content = content.replace(old_launcher, new_launcher)
-                    
-                    # Thêm hàm copyUriToCache vào cuối file nếu chưa có
-                    if 'fun copyUriToCache' not in content:
-                        helper_function = """
-
-        fun copyUriToCache(context: android.content.Context, uri: android.net.Uri): String? {
-            try {
-                val inputStream = context.contentResolver.openInputStream(uri) ?: return null
-                val tempFile = java.io.File(context.cacheDir, "temp_stream.mp4")
-                if (tempFile.exists()) tempFile.delete()
-                val outputStream = java.io.FileOutputStream(tempFile)
-                inputStream.use { input ->
-                    outputStream.use { output ->
-                        input.copyTo(output)
-                    }
-                }
-                return tempFile.absolutePath
-            } catch (e: Exception) {
-                e.printStackTrace()
-                return null
-            }
-        }
-        """
-                        content = content + helper_function
-                        print('-> Đã chèn hàm copyUriToCache vào cuối file thành công!')
-                    
-                    with open(path, 'w', encoding='utf-8') as f:
-                        f.write(content)
-        print("=== Đã thực thi bản vá lỗi bằng Python thành công ===")
+        print("=== Đã thực thi bản vá lỗi bằng Regex thành công ===")
         EOF
         python3 patch.py
 
